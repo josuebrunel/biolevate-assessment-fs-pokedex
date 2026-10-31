@@ -1,0 +1,4 @@
+bin/
+.env
+*.out
+candidate-resources/pokedex.json
