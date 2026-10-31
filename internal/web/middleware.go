@@ -29,7 +29,7 @@ func requestContext() echo.MiddlewareFunc {
 // accessLog writes one line per request once the response status is known.
 // Errors are forwarded to the central error handler, which logs them once, so
 // the access line carries no error text. The level follows the status: 5xx
-// error, 4xx warn, otherwise info; health checks log at debug.
+// error, 4xx warn, otherwise info; health and readiness checks log at debug.
 func accessLog(log *slog.Logger) (echo.MiddlewareFunc, error) {
 	return middleware.RequestLoggerConfig{
 		HandleError:     true,
@@ -47,7 +47,7 @@ func accessLog(log *slog.Logger) (echo.MiddlewareFunc, error) {
 				level = slog.LevelError
 			case v.Status >= http.StatusBadRequest:
 				level = slog.LevelWarn
-			case v.RoutePath == healthPath:
+			case v.RoutePath == healthPath || v.RoutePath == readyPath:
 				level = slog.LevelDebug
 			}
 			log.LogAttrs(c.Request().Context(), level, "request",

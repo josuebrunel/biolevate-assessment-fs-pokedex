@@ -85,8 +85,9 @@ func TestAccessLog(t *testing.T) {
 func TestHealthIsQuietAtInfo(t *testing.T) {
 	e, buf := newTestServer(t, "info")
 	do(e, http.MethodGet, "/healthz", "")
+	do(e, http.MethodGet, "/readyz", "")
 	if buf.Len() != 0 {
-		t.Errorf("health check logged at info: %s", buf)
+		t.Errorf("probe logged at info: %s", buf)
 	}
 }
 
