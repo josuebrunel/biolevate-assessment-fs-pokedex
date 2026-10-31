@@ -16,6 +16,7 @@
   - [Data and schema](#data-and-schema)
   - [Store layer](#store-layer)
   - [Query optimization](#query-optimization)
+  - [Query parser](#query-parser)
   - [Commands](#commands)
 
 # Assessment
@@ -135,6 +136,7 @@ AI-use disclosure land here as they are built.
 | [Import command](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/3) | done |
 | [Store layer](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/4) | done |
 | [Query optimization guard](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/5) | done |
+| [Query parser](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/6) | done |
 | Search (query parsing, retrieval, concepts, graph expansion) | planned |
 | Web UI and compare view | planned |
 | Golden-query suite, hardening, write-up | planned |
@@ -219,6 +221,28 @@ What backs the queries:
 The importer runs `ANALYZE` after loading so the planner starts with fresh
 statistics. Adding a query? Exercise it in a test that uses the recorder; if it
 needs an index the guard will say so, and the index goes in a new migration.
+
+## Query parser
+
+`search.Parse` reads free text into a structured `Query` with no database and no
+model: it is pure, deterministic and fuzz-tested. It is deliberately rule-based
+so every interpretation is explainable and testable.
+
+| Input | Understood as |
+|---|---|
+| `fast electric` | type electric, sorted by speed (highest first) |
+| `slowest water type` | type water, sorted by speed (lowest first) |
+| `top 5 strongest fire` | type fire, sorted by attack, limit 5 |
+| `best water pokemon` | type water, sorted by base stat total, only Pokémon |
+| `put opponent to sleep` | term `sleep` (`put`, `opponent` are noise) |
+| `moves that cause paralysis` | only moves, term `paralysis` |
+| `rain team` | term `rain`, strategy question |
+| `pikachu vs raichu`, `compare mr mime and pikachu` | comparison of the two sides |
+
+The result is a set of hints, not filters. `poison` is both a type and a word in
+move effects, so the retrievers decide how to combine types, terms and the full
+token list. `Interpretation()` returns short phrases ("type: electric", "sorted
+by speed") so the UI can show users how their query was read.
 
 ## Commands
 
