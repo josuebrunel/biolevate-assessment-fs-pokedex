@@ -1,8 +1,11 @@
 package web
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
@@ -76,6 +79,63 @@ func securityHeaders() echo.MiddlewareFunc {
 			h.Set("Content-Security-Policy", csp)
 			h.Set("X-Content-Type-Options", "nosniff")
 			h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+			return next(c)
+		}
+	}
+}
+
+// limitMiddleware bounds the cost of a request: a body cap, a per-client rate
+// limit, a deadline on the request context (which the database driver honours,
+// so a slow query is cancelled rather than left running), and gzip. Probes and
+// static files skip the rate limit so orchestration and page assets never
+// compete with searches for quota.
+func limitMiddleware(l Limits) ([]echo.MiddlewareFunc, error) {
+	var out []echo.MiddlewareFunc
+	if l.MaxBodyBytes > 0 {
+		out = append(out, middleware.BodyLimit(l.MaxBodyBytes))
+	}
+	if l.RateLimit > 0 {
+		store := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
+			Rate: l.RateLimit, Burst: l.RateBurst, ExpiresIn: 3 * time.Minute,
+		})
+		rl, err := middleware.RateLimiterConfig{
+			Store:   store,
+			Skipper: unmetered,
+			DenyHandler: func(*echo.Context, string, error) error {
+				return echo.NewHTTPError(http.StatusTooManyRequests, "Too many searches. Wait a moment and try again.")
+			},
+		}.ToMiddleware()
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, rl)
+	}
+	if l.RequestTimeout > 0 {
+		out = append(out, requestDeadline(l.RequestTimeout))
+	}
+	gz, err := middleware.GzipConfig{Skipper: func(c *echo.Context) bool {
+		return c.Request().URL.Path == healthPath || c.Request().URL.Path == readyPath
+	}}.ToMiddleware()
+	if err != nil {
+		return nil, err
+	}
+	return append(out, gz), nil
+}
+
+// unmetered reports whether a request is exempt from the rate limit.
+func unmetered(c *echo.Context) bool {
+	p := c.Request().URL.Path
+	return p == healthPath || p == readyPath || strings.HasPrefix(p, "/static/")
+}
+
+// requestDeadline gives each request a deadline on its context. Handlers and
+// everything below them (engine, store, database) stop when it passes.
+func requestDeadline(d time.Duration) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c *echo.Context) error {
+			ctx, cancel := context.WithTimeout(c.Request().Context(), d)
+			defer cancel()
+			c.SetRequest(c.Request().WithContext(ctx))
 			return next(c)
 		}
 	}

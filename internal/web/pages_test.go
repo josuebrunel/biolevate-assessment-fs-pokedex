@@ -115,7 +115,7 @@ func TestSearchPageAndFragment(t *testing.T) {
 	if !strings.Contains(frag.Body.String(), "Jolteon") {
 		t.Error("fragment lacks results")
 	}
-	if !strings.Contains(frag.Header().Get("Vary"), "HX-Request") {
+	if !strings.Contains(strings.Join(frag.Header().Values("Vary"), ","), "HX-Request") {
 		t.Error("response does not vary on HX-Request")
 	}
 

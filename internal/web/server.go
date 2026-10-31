@@ -4,6 +4,7 @@ package web
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
@@ -27,12 +28,22 @@ type Pokedex interface {
 	PokemonGetByNames(ctx context.Context, names []string) ([]store.Pokemon, error)
 }
 
+// Limits bound what one client and one request may cost. Zero values disable
+// the matching limit, which keeps tests simple.
+type Limits struct {
+	RequestTimeout time.Duration // deadline carried by the request context
+	MaxBodyBytes   int64
+	RateLimit      float64 // requests per second per client
+	RateBurst      int
+}
+
 // Deps are what the handlers depend on. Ping reports whether the database is
 // reachable, for the readiness check.
 type Deps struct {
 	Search  Searcher
 	Pokedex Pokedex
 	Ping    func(ctx context.Context) error
+	Limits  Limits
 }
 
 // NewServer builds the Echo instance with its middleware, error handler and
@@ -51,7 +62,12 @@ func NewServer(log *slog.Logger, deps Deps) (*echo.Echo, error) {
 
 	e := echo.New()
 	e.HTTPErrorHandler = errorHandler(log, assets.version)
+	limits, err := limitMiddleware(deps.Limits)
+	if err != nil {
+		return nil, err
+	}
 	e.Use(middleware.RequestID(), requestContext(), access, middleware.Recover(), securityHeaders())
+	e.Use(limits...)
 
 	e.GET(healthPath, healthz)
 	e.GET(readyPath, readyz(deps.Ping))

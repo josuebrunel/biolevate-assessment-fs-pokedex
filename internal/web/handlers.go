@@ -69,8 +69,10 @@ func (h *handlers) meta(c *echo.Context, title, description string) views.Meta {
 // render writes a component with the given status. It renders to a buffer
 // first so a failing template never leaves a half-written page behind.
 func render(c *echo.Context, status int, component templ.Component) error {
+	// Rendering is short and CPU-only, and must still work after the request
+	// deadline passed: that is exactly when the error page is needed.
 	var buf bytes.Buffer
-	if err := component.Render(c.Request().Context(), &buf); err != nil {
+	if err := component.Render(context.WithoutCancel(c.Request().Context()), &buf); err != nil {
 		return err
 	}
 	return c.HTMLBlob(status, buf.Bytes())

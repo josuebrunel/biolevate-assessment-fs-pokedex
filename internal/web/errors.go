@@ -1,11 +1,13 @@
 package web
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/labstack/echo/v5"
 
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/logging"
@@ -29,7 +31,14 @@ func errorHandler(log *slog.Logger, assets string) echo.HTTPErrorHandler {
 			code = sc.StatusCode()
 		}
 
+		if timedOut(err) {
+			code = http.StatusGatewayTimeout
+		}
+
 		message := http.StatusText(code)
+		if code == http.StatusGatewayTimeout {
+			message = "That search took too long. Try a shorter or simpler one."
+		}
 		var he *echo.HTTPError
 		if code < http.StatusInternalServerError && errors.As(err, &he) && he.Message != "" {
 			message = he.Message
@@ -84,4 +93,11 @@ func sendHTMLError(c *echo.Context, code int, e views.ErrorView, assets string) 
 	}
 	meta := views.Meta{Title: e.Message + " · Chen Lab Pokédex", Description: e.Message, NoIndex: true, Assets: assets}
 	return render(c, code, views.ErrorPage(meta, e))
+}
+
+// timedOut reports whether err means the work ran out of time: the request
+// deadline passed, or Postgres cancelled a statement over statement_timeout.
+func timedOut(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &pgErr) && pgErr.Code == "57014" /* query_canceled */)
 }
