@@ -21,7 +21,7 @@ func TestMigrate(t *testing.T) {
 		const q = `SELECT count(*) FROM information_schema.tables
 			WHERE table_schema = 'public' AND table_name IN
 			('pokemon','moves','abilities','pokemon_types','pokemon_moves','pokemon_abilities',
-			 'concepts','concept_aliases','concept_terms','concept_types')`
+			 'concepts','concept_aliases','concept_terms','concept_types','concept_pokemon')`
 		if err := conn.QueryRowContext(ctx, q).Scan(&n); err != nil {
 			t.Fatal(err)
 		}
@@ -33,29 +33,32 @@ func TestMigrate(t *testing.T) {
 		var n int
 		const q = `SELECT count(*) FROM pg_indexes WHERE schemaname = 'public' AND indexname IN
 			('pokemon_hp_idx','pokemon_attack_idx','pokemon_defense_idx','pokemon_special_attack_idx',
-			 'pokemon_special_defense_idx','pokemon_speed_idx','pokemon_total_idx')`
+			 'pokemon_special_defense_idx','pokemon_speed_idx','pokemon_total_idx',
+			 'pokemon_weight_idx','pokemon_height_idx','pokemon_weight_asc_idx','pokemon_height_asc_idx','pokemon_legendary_idx')`
 		if err := conn.QueryRowContext(ctx, q).Scan(&n); err != nil {
 			t.Fatal(err)
 		}
 		return n
 	}
 
-	// Each step records the tables (6 entity + 4 concept) and the stat sort
-	// indexes (7) that must exist afterwards.
+	// Each step records the tables (6 entity + 5 concept) and the sort and
+	// filter indexes (7 stat + 5 size and legendary) that must exist afterwards.
 	steps := []struct {
 		name    string
 		action  db.MigrateAction
 		tables  int
 		sortIdx int
 	}{
-		{"up creates the schema", db.MigrateUp, 10, 7},
-		{"up is idempotent", db.MigrateUp, 10, 7},
+		{"up creates the schema", db.MigrateUp, 11, 12},
+		{"up is idempotent", db.MigrateUp, 11, 12},
+		{"down rolls back concept collections", db.MigrateDown, 10, 12},
+		{"down rolls back size and legendary indexes", db.MigrateDown, 10, 7},
 		{"down rolls back concept types", db.MigrateDown, 9, 7},
-		{"down again rolls back the concept tables", db.MigrateDown, 6, 7},
-		{"down again rolls back the sort indexes", db.MigrateDown, 6, 0},
-		{"up re-applies", db.MigrateUp, 10, 7},
+		{"down rolls back the concept tables", db.MigrateDown, 6, 7},
+		{"down rolls back the stat sort indexes", db.MigrateDown, 6, 0},
+		{"up re-applies", db.MigrateUp, 11, 12},
 		{"revert rolls back everything", db.MigrateRevert, 0, 0},
-		{"up after revert", db.MigrateUp, 10, 7},
+		{"up after revert", db.MigrateUp, 11, 12},
 	}
 	for _, s := range steps {
 		if err := db.Migrate(ctx, conn, s.action); err != nil {

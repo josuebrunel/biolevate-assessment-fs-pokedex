@@ -202,8 +202,7 @@
     "name": "raichu",
     "within": 5
    }
-  ],
-  "known": "fragments under three characters are not searched, to avoid matching everything"
+  ]
  },
  {
   "name": "fast electric",
@@ -401,8 +400,7 @@
     "name": "snorlax",
     "within": 1
    }
-  ],
-  "known": "weight and height are not sortable criteria in the query parser"
+  ]
  },
  {
   "name": "sleep in plain words",
@@ -644,8 +642,7 @@
     "name": "toxic",
     "within": 5
    }
-  ],
-  "known": "the word poison is read as a type filter, so moves that cause poison are crowded out"
+  ]
  },
  {
   "name": "stat boost",
@@ -672,8 +669,7 @@
     "name": "acid-armor",
     "within": 8
    }
-  ],
-  "known": "raise defense is read as a sort by defense, and effect text is not searched for it"
+  ]
  },
  {
   "name": "one-hit KO",
@@ -695,8 +691,7 @@
     "name": "horn-drill",
     "within": 5
    }
-  ],
-  "known": "no concept for one-hit KO; stems of the words match multi-hit moves instead"
+  ]
  },
  {
   "name": "abbreviation",
@@ -718,8 +713,7 @@
     "name": "horn-drill",
     "within": 5
    }
-  ],
-  "known": "no alias for the abbreviation"
+  ]
  },
  {
   "name": "who learns a move",
@@ -736,8 +730,7 @@
     "name": "raichu",
     "within": 5
    }
-  ],
-  "known": "a move named in a question is not followed back to the Pokémon that learn it"
+  ]
  },
  {
   "name": "who has an ability",
@@ -754,8 +747,7 @@
     "name": "koffing",
     "within": 5
    }
-  ],
-  "known": "an ability named in a question is not followed back to the Pokémon that have it"
+  ]
  },
  {
   "name": "category word",
@@ -782,8 +774,7 @@
     "name": "mewtwo",
     "within": 5
    }
-  ],
-  "known": "legendary status is stored but not searchable"
+  ]
  },
  {
   "name": "role word",
@@ -795,8 +786,7 @@
     "name": "charmander",
     "within": 8
    }
-  ],
-  "known": "starter is not a concept; the query is read as the fire type only"
+  ]
  },
  {
   "name": "rain: abilities",
@@ -990,6 +980,246 @@
     "kind": "pokemon",
     "name": "bulbasaur",
     "within": 0
+   }
+  ]
+ },
+ {
+  "name": "legendary and a type",
+  "category": "criteria and comparison",
+  "query": "legendary fire",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "moltres",
+    "within": 1
+   }
+  ],
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "mew",
+    "within": 0
+   }
+  ]
+ },
+ {
+  "name": "mythical",
+  "category": "criteria and comparison",
+  "query": "mythical",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "mew",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "lightest",
+  "category": "criteria and comparison",
+  "query": "lightest",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "gastly",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "tallest of a type",
+  "category": "criteria and comparison",
+  "query": "tallest water",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "gyarados",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "substring of a name",
+  "category": "names and typos",
+  "query": "saur",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "bulbasaur",
+    "within": 3
+   },
+   {
+    "kind": "pokemon",
+    "name": "ivysaur",
+    "within": 3
+   },
+   {
+    "kind": "pokemon",
+    "name": "venusaur",
+    "within": 3
+   }
+  ]
+ },
+ {
+  "name": "starter of a type",
+  "category": "vocabulary-free discovery",
+  "query": "water starter",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "squirtle",
+    "within": 1
+   }
+  ],
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "staryu",
+    "within": 0
+   }
+  ]
+ },
+ {
+  "name": "starters",
+  "category": "vocabulary-free discovery",
+  "query": "starter",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "bulbasaur",
+    "within": 3
+   },
+   {
+    "kind": "pokemon",
+    "name": "charmander",
+    "within": 3
+   },
+   {
+    "kind": "pokemon",
+    "name": "squirtle",
+    "within": 3
+   }
+  ]
+ },
+ {
+  "name": "fossil",
+  "category": "vocabulary-free discovery",
+  "query": "fossil pokemon",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "kabuto",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "omanyte",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "aerodactyl",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "eeveelutions",
+  "category": "vocabulary-free discovery",
+  "query": "eeveelution",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "vaporeon",
+    "within": 4
+   },
+   {
+    "kind": "pokemon",
+    "name": "jolteon",
+    "within": 4
+   },
+   {
+    "kind": "pokemon",
+    "name": "flareon",
+    "within": 4
+   }
+  ]
+ },
+ {
+  "name": "who knows a move",
+  "category": "vocabulary-free discovery",
+  "query": "pokemon that know hypnosis",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "drowzee",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "hypno",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "lowering a stat",
+  "category": "vocabulary-free discovery",
+  "query": "lower defense",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "leer",
+    "within": 8
+   },
+   {
+    "kind": "moves",
+    "name": "tail-whip",
+    "within": 8
+   }
+  ]
+ },
+ {
+  "name": "raising attack",
+  "category": "vocabulary-free discovery",
+  "query": "raise attack",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "meditate",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "sharpen",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "swords-dance",
+    "within": 8
+   }
+  ]
+ },
+ {
+  "name": "instakill",
+  "category": "vocabulary-free discovery",
+  "query": "instakill",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "fissure",
+    "within": 3
+   },
+   {
+    "kind": "moves",
+    "name": "guillotine",
+    "within": 3
+   },
+   {
+    "kind": "moves",
+    "name": "horn-drill",
+    "within": 3
    }
   ]
  }
