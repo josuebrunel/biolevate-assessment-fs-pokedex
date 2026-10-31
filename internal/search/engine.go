@@ -119,8 +119,10 @@ func (e *Engine) Search(ctx context.Context, input string, opts Options) (Respon
 		return Response{}, fmt.Errorf("retrieve: %w", err)
 	}
 	if len(results) == 0 {
-		if len(q.Types) > 1 {
-			resp.Notes = append(resp.Notes, fmt.Sprintf("No Pokémon in this Pokédex is both %s.", strings.Join(q.Types, " and ")))
+		if note, err := e.emptyFilterNote(ctx, q); err != nil {
+			return Response{}, err
+		} else if note != "" {
+			resp.Notes = append(resp.Notes, note)
 		}
 		return resp, nil
 	}
@@ -430,4 +432,45 @@ func matchedByWords(r Result) bool {
 	return slices.ContainsFunc(r.Reasons, func(reason string) bool {
 		return strings.HasPrefix(reason, "name") || strings.HasPrefix(reason, "text")
 	})
+}
+
+// emptyFilterNote explains a search that filters Pokémon and found none: which
+// filters were combined and how many Pokémon each matches on its own, so the
+// user knows which one to drop ("No Pokémon is pink and flying"). It runs only
+// for an empty answer, and only when two or more filters were combined.
+func (e *Engine) emptyFilterNote(ctx context.Context, q Query) (string, error) {
+	if len(q.Terms) > 0 {
+		return "", nil
+	}
+	type part struct {
+		label  string
+		params store.PokemonListParams
+	}
+	var parts []part
+	if q.Color != "" {
+		parts = append(parts, part{q.Color, store.PokemonListParams{Color: q.Color}})
+	}
+	for _, t := range q.Types {
+		parts = append(parts, part{t, store.PokemonListParams{Types: []string{t}}})
+	}
+	for _, t := range q.NotTypes {
+		parts = append(parts, part{"non-" + t, store.PokemonListParams{NotTypes: []string{t}}})
+	}
+	if q.Legendary {
+		parts = append(parts, part{"legendary", store.PokemonListParams{Legendary: true}})
+	}
+	if len(parts) < 2 {
+		return "", nil
+	}
+	labels, counts := make([]string, len(parts)), make([]string, len(parts))
+	for i, p := range parts {
+		p.params.Limit = 200
+		found, err := e.store.PokemonList(ctx, p.params)
+		if err != nil {
+			return "", fmt.Errorf("count %s Pokémon: %w", p.label, err)
+		}
+		labels[i], counts[i] = p.label, fmt.Sprintf("%s %d", p.label, len(found))
+	}
+	return fmt.Sprintf("No Pokémon in this Pokédex is %s. On their own: %s. Try dropping one.",
+		strings.Join(labels, " and "), strings.Join(counts, ", ")), nil
 }

@@ -31,7 +31,7 @@ What to type, what the engine returns, and how it is tested. The deep dives are 
 |---|---|---|
 | `fire flying`, `fire and flying` | Charizard and Moltres | Several types mean **both** types. |
 | `fire or flying` | The same two (both types) | `or` is not understood yet; it is dropped as a filler word. |
-| `fire water` | Nothing, and a note | No Pokémon here has both types. |
+| `fire water`, `pink flying pokemon` | Nothing, and a note such as "No Pokémon in this Pokédex is pink and flying. On their own: pink 12, flying 19. Try dropping one." | No Pokémon has all the filters. The note says how many match each filter alone, so you know which to drop. |
 | `electric not flying` | Electric types without Zapdos | Negation applies to the next word. |
 | `acid and pink` | The move Acid, and a note: no pink Pokémon is linked to it | A **filter** (type, colour, negation, legendary) **narrows the Pokémon** found through a move or ability. No pink Pokémon learns Acid in this data, so none are listed, and the page says why. |
 | `electric thunder` | Thunder and the electric Pokémon that learn it | The same rule with a match: Zapdos, Jolteon and others, not every Pokémon that learns Thunder. |
@@ -64,5 +64,5 @@ Query 14 may legitimately find little, and that is fine to report.
 
 ## How queries are tested
 
-- **Golden suite** (`internal/golden/cases.json`, 92 cases): written by the engine's author while tuning, so it guards regressions. Run `make eval`.
+- **Golden suite** (`internal/golden/cases.json`, 93 cases): written by the engine's author while tuning, so it guards regressions. Run `make eval`.
 - **Held-out set** (above): not tuned against, reported separately once run.

@@ -160,7 +160,7 @@ so every interpretation is explainable and testable.
 | `火`, `🔥` | non-Latin words are dropped with a note; a query with nothing searchable gets a note too |
 | `e`, `pokemon` | a single letter or a bare kind word is not searched; a note asks for more |
 
-**Notes.** When the parser or engine understood something it could not act on (an ignored word, a negation it cannot apply, an impossible type pair, a query too short), it adds a plain-language **note**, shown in Professor Chen's box. A search is never silently empty or silently wrong when the reason is known. **Filters narrow the graph.** When a move or ability was found, the type, colour, negation and legendary filters also narrow the Pokémon it leads to, so `acid and pink` means pink Pokémon that use Acid; if there are none, a note says so instead of listing unrelated Pokémon. Two retrieval rules support this: a name that matches **exactly** does not follow its description into the graph (so `mr mime` is not about the move Mimic), and a name with no match is retried without hyphens (`pi-ka-chu`).
+**Notes.** When the parser or engine understood something it could not act on (an ignored word, a negation it cannot apply, filters that no Pokémon satisfies together, a query too short), it adds a plain-language **note**, shown in Professor Chen's box. A search is never silently empty or silently wrong when the reason is known. **Filters narrow the graph.** When a move or ability was found, the type, colour, negation and legendary filters also narrow the Pokémon it leads to, so `acid and pink` means pink Pokémon that use Acid; if there are none, a note says so instead of listing unrelated Pokémon. Two retrieval rules support this: a name that matches **exactly** does not follow its description into the graph (so `mr mime` is not about the move Mimic), and a name with no match is retried without hyphens (`pi-ka-chu`).
 
 The result is a set of hints, not filters. `poison` is both a type and a word in
 move effects, so the retrievers decide how to combine types, terms and the full
@@ -357,9 +357,9 @@ JavaScript; HTMX only removes the full reload.
 
 ## Golden-query suite
 
-`internal/golden` scores the engine against 92 queries with known good answers
+`internal/golden` scores the engine against 93 queries with known good answers
 (`cases.json`), through the real engine and Postgres. Cases cover the four
-challenges plus typos, hostile input, empty queries and odd input (negation, colours, impossible type pairs), in six categories.
+challenges plus typos, hostile input, empty queries and odd input (negation, colours, filters that match nothing together), in six categories.
 
 Each case lists results that must appear within the top N of a kind, results
 that must not appear, or that nothing may come back. The runner reports recall
@@ -372,10 +372,10 @@ category                     cases  passed  recall  MRR
 criteria and comparison      16     16      1.00    0.74
 names and typos              16     16      1.00    0.83
 negatives and hostile input  5      5       -       -
-odd input                    21     21      1.00    0.81
+odd input                    22     22      1.00    0.81
 strategy bundles             8      8       1.00    0.55
 vocabulary-free discovery    26     26      1.00    0.52
-core total                   92     92      1.00    0.63
+core total                   93     93      1.00    0.63
 ```
 
 A case can carry a `known` flag with the reason the engine misses it. A known

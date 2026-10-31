@@ -1548,5 +1548,11 @@
     "within": 50
    }
   ]
+ },
+ {
+  "name": "colour and type with no Pokémon",
+  "category": "odd input",
+  "query": "pink flying pokemon",
+  "expect_empty": true
  }
 ]

@@ -85,7 +85,8 @@ func TestEngine(t *testing.T) {
 			want  string
 			empty bool
 		}{
-			{"fire water", "No Pokémon in this Pokédex is both fire and water.", true},
+			{"fire water", "No Pokémon in this Pokédex is fire and water. On their own: fire 12, water 32. Try dropping one.", true},
+			{"pink flying pokemon", "No Pokémon in this Pokédex is pink and flying. On their own: pink 12, flying 19. Try dropping one.", true},
 			{"e", "Type at least two letters to search.", true},
 			{"moves", "Add a name, a type, a stat or an effect to narrow down the moves.", false},
 			{"fastest slowest", "Sorted by speed first; “slowest” was ignored.", false},
