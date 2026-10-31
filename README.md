@@ -26,6 +26,7 @@
   - [Lexical retriever](#lexical-retriever)
   - [Concept map](#concept-map)
   - [Graph expansion and the engine](#graph-expansion-and-the-engine)
+  - [Web UI](#web-ui)
   - [Logging](#logging)
   - [Code conventions](#code-conventions)
   - [Commands](#commands)
@@ -152,8 +153,7 @@ AI-use disclosure land here as they are built.
 | [Logging](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/8) | done |
 | [Concept map](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/11) | done |
 | [Graph expansion and explanations](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/12) | done |
-| Search (query parsing, retrieval, concepts, graph expansion) | planned |
-| Web UI and compare view | planned |
+| [Web UI and compare view](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/13) | done |
 | Golden-query suite, hardening, write-up | planned |
 
 ## Run it
@@ -163,7 +163,7 @@ docker compose up --build
 ```
 
 This starts Postgres, applies the migrations, imports the dataset and serves the
-app on http://localhost:8080 (`/healthz` is the only route so far). If port 5432
+app on http://localhost:8080. If port 5432
 is already taken on your machine, use `DB_PORT=5433 docker compose up --build`.
 
 To run the app outside Docker, start only the database with
@@ -171,7 +171,7 @@ To run the app outside Docker, start only the database with
 
 ## Stack
 
-Go, Echo v5, Postgres (with `pg_trgm`; pgvector image ready for the optional
+Go, Echo v5, Templ, HTMX, Postgres (with `pg_trgm`; pgvector image ready for the optional
 embeddings step), Goose migrations, Bob for queries. Postgres does the heavy
 lifting for search: weighted full-text (`tsvector`), typo and prefix tolerance
 (trigram indexes) and, optionally later, vectors, all in one engine. No Redis:
@@ -386,6 +386,44 @@ two relation lookups, up to a few type lookups and three hydrations. A test
 asserts the count is the same for 2 and for 40 items per group, and every query
 goes through the index-usage guard.
 
+## Web UI
+
+Server-rendered with Templ, enhanced with HTMX. Every page works without
+JavaScript; HTMX only removes the full reload.
+
+| Route | Purpose |
+|---|---|
+| `/` | search box and four example questions |
+| `/?q=...` | results; the URL is shareable and reloadable |
+| `/compare?p=raichu&p=jolteon` | side-by-side table for up to three Pokémon |
+| `/healthz`, `/readyz` | liveness, and readiness (pings the database) |
+| `/static/...` | embedded CSS, JS and htmx, cached for a year under a content hash |
+
+- **Live search:** the box searches 350 ms after you stop typing. HTMX requests
+  to `/` get only the results fragment (`Vary: HX-Request`); a normal request
+  gets the full page, so back, reload and shared links all work.
+- **Every result explains itself:** chips show how the query was read (types,
+  sort, concepts), each move and ability shows why it matched, and each Pokémon
+  lists the move, ability or type that links it to the query.
+- **Compare is stateless:** ticking "Add to compare" fills a plain GET form, so a
+  comparison is just a link. Best value per row is marked with a triangle and
+  bold colour, not colour alone.
+- **Errors:** one handler. Browsers and HTMX get an error page or fragment with
+  the request ID; API clients keep JSON. Input is validated at the boundary
+  (query up to 200 characters, Pokémon names `[a-z0-9-]`, at most three).
+- **Security headers:** strict Content-Security-Policy (own scripts and styles,
+  no eval), `nosniff`, referrer policy. Templ escapes all output; a test checks
+  a script payload in the query is escaped.
+- **Offline:** CSS, JS and htmx are embedded, with no CDN or build step. The one
+  external request is optional Google Fonts; without network the page falls back
+  to system fonts. Images are not used at all, so the sprites in the dataset are
+  never needed. The Pokémon tiles are drawn from the dex number and type.
+- **Design deviation:** the skill's default is DaisyUI, which needs either a CDN
+  or a Node build. I wrote a small hand-made stylesheet instead (about 13 KB)
+  to keep `docker compose up` offline and dependency-free. Templ output is
+  committed (`*_templ.go`), so building needs no `templ` binary; run
+  `make generate` after editing a `.templ` file.
+
 ## Logging
 
 Logs are structured (`log/slog`), one JSON object per line by default.
@@ -432,6 +470,7 @@ Logs are structured (`log/slog`), one JSON object per line by default.
 | Command | Purpose |
 |---|---|
 | `make run` | run the server |
+| `make generate` | regenerate Templ components after editing `.templ` files |
 | `make migrate-up` / `make migrate-down` | apply all / roll back one migration (`-migrate revert` rolls back all) |
 | `make import` | load the embedded snapshot into the database |
 | `make test` | unit tests; Postgres tests are skipped |
