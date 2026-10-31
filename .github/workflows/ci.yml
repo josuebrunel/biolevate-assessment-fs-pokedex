@@ -8,6 +8,20 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: pokedex
+          POSTGRES_PASSWORD: pokedex
+          POSTGRES_DB: pokedex
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pokedex -d pokedex"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -16,3 +30,5 @@ jobs:
       - run: go vet ./...
       - uses: golangci/golangci-lint-action@v6
       - run: go test -race ./...
+        env:
+          APP_TEST_DATABASE_URL: postgres://pokedex:pokedex@localhost:5432/pokedex?sslmode=disable

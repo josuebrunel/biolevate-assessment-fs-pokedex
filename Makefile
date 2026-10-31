@@ -1,6 +1,11 @@
 BIN := bin/pokedex
 
-.PHONY: build run test lint tidy docker-up docker-down
+DB_PORT ?= 5432
+DB_URL := postgres://pokedex:pokedex@localhost:$(DB_PORT)/pokedex?sslmode=disable
+export APP_DATABASE_URL ?= $(DB_URL)
+export DB_PORT
+
+.PHONY: build run test test-integration lint tidy migrate-up migrate-down docker-up docker-down
 
 build:
 	go build -o $(BIN) ./cmd/pokedex
@@ -11,12 +16,23 @@ run:
 test:
 	go test -race ./...
 
+# Runs the suite including tests that need Postgres, starting the compose db first.
+test-integration:
+	docker compose up -d --wait db
+	APP_TEST_DATABASE_URL=$(DB_URL) go test -race -count=1 ./...
+
 lint:
 	go vet ./...
 	golangci-lint run ./...
 
 tidy:
 	go mod tidy
+
+migrate-up:
+	go run ./cmd/pokedex -migrate up
+
+migrate-down:
+	go run ./cmd/pokedex -migrate down
 
 docker-up:
 	docker compose up --build -d
