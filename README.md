@@ -24,6 +24,7 @@
   - [Query optimization](#query-optimization)
   - [Query parser](#query-parser)
   - [Lexical retriever](#lexical-retriever)
+  - [Concept map](#concept-map)
   - [Logging](#logging)
   - [Code conventions](#code-conventions)
   - [Commands](#commands)
@@ -148,6 +149,7 @@ AI-use disclosure land here as they are built.
 | [Query parser](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/6) | done |
 | [Lexical retriever](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/7) | done |
 | [Logging](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/8) | done |
+| [Concept map](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/11) | done |
 | Search (query parsing, retrieval, concepts, graph expansion) | planned |
 | Web UI and compare view | planned |
 | Golden-query suite, hardening, write-up | planned |
@@ -285,15 +287,57 @@ moves and abilities instead of whichever table scores highest.
 Known limits, addressed in the next steps:
 
 - Pure lexical search cannot bridge vocabulary: the English stemmer treats
-  `paralysis` and `paralyze` as different words, so "moves that cause
-  paralysis" finds nothing yet. A test already shows an expander hook fixing it;
-  the concept map plugs into that hook.
+  `paralysis` and `paralyze` as different words. The concept map (next section)
+  closes that gap.
 - Text hits only say that a term appears, not why an entity is relevant. Showing
   that a Pokémon matters because it learns Hypnosis comes with graph expansion.
 - The dataset is Gen 1 only, so there is no Rain Dance move. A rain strategy has
   to be assembled from abilities (`swift-swim`, `rain-dish`, `dry-skin`,
   `hydration`), moves whose text mentions weather (`thunder`, `solar-beam`) and
   Water types.
+
+## Concept map
+
+Users do not know the data's vocabulary: they type "asleep", "drowsy" or
+"paralysis", the data says "puts the target to sleep" and "paralyzes". A concept
+links the two:
+
+```json
+{ "key": "sleep", "label": "Sleep",
+  "aliases": ["sleep", "asleep", "drowsy", "snooze", "nap"],
+  "terms":   ["sleep", "puts the target to sleep"] }
+```
+
+- **Aliases** are what users type, single lowercase words. **Terms** are what the
+  data says; a term with spaces is searched as a **phrase**.
+- The seed lives in `internal/data/concepts.json` (versioned, embedded,
+  validated), is imported with the dataset into `concepts`, `concept_aliases` and
+  `concept_terms`, and is loaded once at startup into an in-memory `ConceptMap`,
+  so a search adds no query. The map reads every parsed token, not only the
+  leftovers, so `poison` expands even though it is also a type.
+- Matched concepts show up in the result reasons ("concept: Paralysis").
+
+**Causal text should outrank mentions.** Searching "sleep" matches `Rest` ("falls
+to sleep... asleep...") as strongly as `Hypnosis`. Two ranking rules fix that, both
+in `store.TextSearch`:
+
+1. Each term is ranked separately and summed, with phrases weighted 3x. A
+   phrase such as "puts the target to sleep" only matches the five moves that
+   really cause sleep, so they now lead.
+2. In move searches, status moves get a small boost: their text describes the
+   move's main effect, whereas a damaging move's text describes a side effect
+   ("has a chance to paralyze"). This puts Thunder Wave, Stun Spore and Glare
+   ahead of Body Slam and Thunderbolt.
+
+Two guards keep the vocabulary honest. A grounding test fails if any concept
+term matches nothing in the dataset, so a concept cannot silently rot. And
+generic words stay out of `terms`: adding `asleep` made `Rest` tie with the real
+sleep causers, so it is an alias only.
+
+One bug worth recording: the status boost was silently zero at first, because
+Postgres inferred its bind parameter as an integer from the `ELSE 0` branch and
+truncated 0.15. The parameter is now cast explicitly, and a test fails if the
+boost stops working.
 
 ## Logging
 
