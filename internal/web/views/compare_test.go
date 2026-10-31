@@ -25,11 +25,18 @@ func TestBuildCompare(t *testing.T) {
 	if r := rows["Height"]; r.Cells[0].Text != "1.0 m" || r.Cells[1].Text != "n/a" || r.Cells[0].Best {
 		t.Errorf("height row = %+v", r.Cells)
 	}
+	if c.Rounds[0] != 5 || c.Rounds[1] != 6 || !c.Winner[1] || c.Winner[0] {
+		t.Errorf("rounds = %v winners = %v, want a to take 5 and b 6 (a tie counts for both)", c.Rounds, c.Winner)
+	}
 	if got := BuildCompare(nil); len(got.Rows) != 0 {
 		t.Errorf("empty input built rows: %+v", got)
 	}
 	if got := BuildCompare([]store.Pokemon{a}); got.Rows[0].Cells[0].Best {
 		t.Error("a single Pokémon has nothing to beat")
+	}
+	level := BuildCompare([]store.Pokemon{a, a})
+	if level.Winner[0] || level.Winner[1] {
+		t.Errorf("level Pokémon must not crown a winner: %v", level.Winner)
 	}
 }
 

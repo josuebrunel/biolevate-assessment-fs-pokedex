@@ -45,6 +45,24 @@ func tileClass(p store.Pokemon) string {
 	return "tile tile-" + typeName(t)
 }
 
+// rarity grades a Pokémon by its base stat total, so a card's border says at a
+// glance how strong it is. The label is shown as text too, never colour alone.
+func rarity(p store.Pokemon) (class, label string) {
+	switch t := p.Stats.Total(); {
+	case t >= 540:
+		return "legend", "Legendary"
+	case t >= 500:
+		return "epic", "Epic"
+	case t >= 400:
+		return "rare", "Rare"
+	}
+	return "common", "Common"
+}
+
+func rarityClass(p store.Pokemon) string { c, _ := rarity(p); return c }
+
+func rarityLabel(p store.Pokemon) string { _, l := rarity(p); return l }
+
 func dex(p store.Pokemon) string { return fmt.Sprintf("#%03d", p.ID) }
 
 func genus(p store.Pokemon) string {

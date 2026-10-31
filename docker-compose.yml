@@ -1,6 +1,7 @@
 services:
   db:
     image: pgvector/pgvector:pg17
+    container_name: pokedex-db
     environment:
       POSTGRES_USER: pokedex
       POSTGRES_PASSWORD: pokedex
@@ -38,6 +39,7 @@ services:
       context: .
       args:
         VERSION: ${VERSION:-dev}
+    container_name: pokedex-app
     environment:
       APP_DATABASE_URL: postgres://pokedex:pokedex@db:5432/pokedex?sslmode=disable
     ports:

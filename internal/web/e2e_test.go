@@ -48,7 +48,7 @@ func TestChallengesEndToEnd(t *testing.T) {
 		want  []string
 	}{
 		{"bulba", []string{"Bulbasaur"}},
-		{"fast electric", []string{"Electrode", "Jolteon", "type: electric", "Add to compare"}},
+		{"fast electric", []string{"Electrode", "Jolteon", "type: electric", "Add to party"}},
 		{"put opponent to sleep", []string{"Hypnosis", "Sleep Powder", "Drowzee", "learns Hypnosis", "concept: Sleep"}},
 		{"rain team", []string{"Rain Dish", "Swift Swim", "Water type is favoured by Rain", "concept: Rain"}},
 		{"bulbsaur", []string{"Bulbasaur"}}, // a typo still finds it

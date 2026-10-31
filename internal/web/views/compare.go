@@ -10,6 +10,8 @@ import (
 type Compare struct {
 	Pokemon []store.Pokemon
 	Rows    []CompareRow
+	Rounds  []int  // rounds won per Pokémon: the six base stats, best value wins
+	Winner  []bool // leader(s) by rounds won; empty when everyone is level
 }
 
 // CompareRow is one measure across all Pokémon.
@@ -42,6 +44,15 @@ func BuildCompare(pokemon []store.Pokemon) Compare {
 		}
 		c.Rows = append(c.Rows, measureRow(label, values, statMax))
 	}
+	c.Rounds = make([]int, len(pokemon))
+	for _, r := range c.Rows {
+		for j, cell := range r.Cells {
+			if cell.Best {
+				c.Rounds[j]++
+			}
+		}
+	}
+	c.Winner = winners(c.Rounds)
 	totals := make([]int, len(pokemon))
 	for j, p := range pokemon {
 		totals[j] = p.Stats.Total()
@@ -84,4 +95,22 @@ func plainRow(label string, pokemon []store.Pokemon, text func(store.Pokemon) st
 		row.Cells = append(row.Cells, CompareCell{Text: text(p)})
 	}
 	return row
+}
+
+// winners marks who won the most rounds. Ties share the crown, and when every
+// Pokémon is level (or there is only one) nobody wins.
+func winners(rounds []int) []bool {
+	top, level := rounds[0], true
+	for _, r := range rounds {
+		level = level && r == rounds[0]
+		top = max(top, r)
+	}
+	w := make([]bool, len(rounds))
+	if level {
+		return w
+	}
+	for i, r := range rounds {
+		w[i] = r == top
+	}
+	return w
 }

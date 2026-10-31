@@ -4,17 +4,16 @@ import "github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
 
 templ ComparePage(m Meta, c Compare) {
 	@Layout(m, "compare") {
-		<div class="wrap section">
-			<p class="eyebrow">Compare</p>
-			<h1 style="font-size:clamp(1.6rem,5vw,2.3rem)">Side by side</h1>
+		<div class="wrap battle">
+			<h1>Battle</h1>
 			if len(c.Pokemon) < 2 {
 				<div class="empty">
 					<h2>Nothing to compare yet</h2>
-					<p class="note">Search, then tick “Add to compare” on two or three Pokémon.</p>
-					<div><a class="btn" href="/?q=fast+electric" style="display:inline-grid;place-items:center;text-decoration:none">Search “fast electric”</a></div>
+					<p class="note">Search, then tap “Add to party” on two or three Pokémon.</p>
+					<a class="btn" href="/?q=fast+electric">Search “fast electric”</a>
 				</div>
 			} else {
-				<p class="note">Base stats are out of 255. The best value in each row is marked with a triangle.</p>
+				<p class="note">Highest base stat in each row wins the round (▲). Most rounds wins the battle.</p>
 				@CompareTable(c)
 			}
 		</div>
@@ -22,15 +21,18 @@ templ ComparePage(m Meta, c Compare) {
 }
 
 templ CompareTable(c Compare) {
-	<div class="cmp-wrap" tabindex="0" role="region" aria-label="Comparison table, scrolls sideways on small screens">
+	<div class="cmp-wrap">
 		<table class="cmp">
 			<thead>
 				<tr>
 					<th scope="col"><span class="visually-hidden">Measure</span></th>
-					for _, p := range c.Pokemon {
+					for i, p := range c.Pokemon {
 						<th scope="col">
 							<div class="head">
 								@compareHead(p)
+								if c.Winner[i] {
+									<span class="crown">Winner</span>
+								}
 							</div>
 						</th>
 					}
@@ -50,6 +52,12 @@ templ CompareTable(c Compare) {
 						}
 					</tr>
 				}
+				<tr class="rounds">
+					<th scope="row">Rounds</th>
+					for _, n := range c.Rounds {
+						<td><span class="v">{ count(n) }</span></td>
+					}
+				</tr>
 			</tbody>
 		</table>
 	</div>
@@ -58,7 +66,7 @@ templ CompareTable(c Compare) {
 templ compareHead(p store.Pokemon) {
 	<div class={ tileClass(p) } aria-hidden="true"><span class="dex">{ dex(p) }</span></div>
 	<h3>{ Title(p.Name) }</h3>
-	<span class="chips" style="gap:4px">
+	<span class="badges">
 		for _, t := range p.Types {
 			<span class={ badgeClass(t) }>{ t }</span>
 		}
