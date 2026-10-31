@@ -82,6 +82,11 @@ func Run(ctx context.Context, conn *sql.DB, ds *data.Dataset) (err error) {
 	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit import: %w", err)
 	}
+	// Fresh bulk-loaded tables have no statistics until autovacuum gets to them.
+	analyze := psql.RawQuery("ANALYZE pokemon, moves, abilities, pokemon_types, pokemon_moves, pokemon_abilities")
+	if _, aErr := bob.Exec(ctx, bob.NewDB(conn), analyze); aErr != nil {
+		slog.Warn("analyze after import failed", "err", aErr)
+	}
 	slog.Info("import complete",
 		"pokemon", len(ds.Pokemon), "moves", len(ds.Moves), "abilities", len(ds.Abilities),
 		"pokemon_moves", len(moves), "pokemon_abilities", len(abilities))
