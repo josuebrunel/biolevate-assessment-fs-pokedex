@@ -24,17 +24,31 @@ func TestMigrate(t *testing.T) {
 		return n
 	}
 
+	sortIndexes := func() int {
+		t.Helper()
+		var n int
+		const q = `SELECT count(*) FROM pg_indexes WHERE schemaname = 'public' AND indexname IN
+			('pokemon_hp_idx','pokemon_attack_idx','pokemon_defense_idx','pokemon_special_attack_idx',
+			 'pokemon_special_defense_idx','pokemon_speed_idx','pokemon_total_idx')`
+		if err := conn.QueryRowContext(ctx, q).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+
+	// Each step records the tables and the stat sort indexes (7) that must exist.
 	steps := []struct {
-		name   string
-		action db.MigrateAction
-		tables int
+		name    string
+		action  db.MigrateAction
+		tables  int
+		sortIdx int
 	}{
-		{"up creates the schema", db.MigrateUp, 6},
-		{"up is idempotent", db.MigrateUp, 6},
-		{"down rolls back one migration", db.MigrateDown, 3},
-		{"up re-applies", db.MigrateUp, 6},
-		{"revert rolls back everything", db.MigrateRevert, 0},
-		{"up after revert", db.MigrateUp, 6},
+		{"up creates the schema", db.MigrateUp, 6, 7},
+		{"up is idempotent", db.MigrateUp, 6, 7},
+		{"down rolls back the sort indexes only", db.MigrateDown, 6, 0},
+		{"up re-applies", db.MigrateUp, 6, 7},
+		{"revert rolls back everything", db.MigrateRevert, 0, 0},
+		{"up after revert", db.MigrateUp, 6, 7},
 	}
 	for _, s := range steps {
 		if err := db.Migrate(ctx, conn, s.action); err != nil {
@@ -42,6 +56,9 @@ func TestMigrate(t *testing.T) {
 		}
 		if got := tables(); got != s.tables {
 			t.Fatalf("%s: %d tables, want %d", s.name, got, s.tables)
+		}
+		if got := sortIndexes(); got != s.sortIdx {
+			t.Fatalf("%s: %d sort indexes, want %d", s.name, got, s.sortIdx)
 		}
 	}
 
