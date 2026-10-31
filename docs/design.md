@@ -125,6 +125,7 @@ What backs the queries:
 - full-text: GIN on the generated `search_doc` columns;
 - type filters: `pokemon_types (type, pokemon_id)`;
 - stat sorts: `(stat DESC, id)` indexes plus one on the base stat total expression;
+- size, rarity and colour: weight and height indexes in both directions, a partial index on legendary and mythical, and `(color, id)` for "red pokemon";
 - graph lookups and hydration: primary keys and the reverse join indexes.
 
 The importer runs `ANALYZE` after loading so the planner starts with fresh

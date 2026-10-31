@@ -238,7 +238,7 @@ Also works: `chu`, `legendary fire`, `heaviest`, `pokemon with levitate`, `water
 **Known limits**
 
 - **Matchups** (`how to beat gyarados`) and **evolutions** are not answered: the data has no type chart or evolution order (it has a family id, unused so far).
-- **Paraphrases outside the concept map** fall back to word matching. **Negation** works for types and stat words (`not electric`, `not fast`); anything else is reported as ignored.
+- **Paraphrases outside the concept map** fall back to word matching. **Negation** works for types and stat words (`not electric`, `not fast`); anything else is reported as ignored. **`or` between filters** is not understood yet (`fire or flying` behaves like `fire flying`).
 - **English only.** Accents are fine (`pikachú`) and French type names work (`feu`, `électrique`), but names, moves and effects are searched in English, and other scripts (`火`) get a note instead of results.
 - **Cards confirm a Pokémon with genus, types and stats**, but show no species description or image, and there is no detail page.
 - **The hardening** (rate limiting, CSP, timeouts) goes beyond the brief on purpose and is not needed to judge the search.
@@ -246,7 +246,7 @@ Also works: `chu`, `legendary fire`, `heaviest`, `pokemon with levitate`, `water
 **Next steps**
 
 1. **Species description on cards, a detail page and evolution families** (from the family id).
-2. **A held-out evaluation set**, written before running it, reported next to the golden suite.
+2. **Run the held-out queries** listed in [docs/queries.md](docs/queries.md) (written from the dataset, not tuned against) and report the result next to the golden suite. Add `or` between types.
 3. **Measure embeddings** (pgvector, a local model, fallback to lexical) against that set; keep them only if they win by enough to justify a service.
 4. **A small type chart**, if extra data is allowed.
 
