@@ -146,7 +146,7 @@ click the matching example, or type the query.
 | Situation | Try | What you get |
 |---|---|---|
 | Partly remembered name | `bulba` | Bulbasaur first, with type, genus and stats to confirm. Typos work too (`pikchu`, `charzard`). |
-| Fast Electric candidates, then a choice | `fast electric` | Electric types sorted by speed, then "Add to compare" for a side-by-side table with the best value per row marked. |
+| Fast Electric candidates, then a choice | `fast electric` | Electric types sorted by speed, then "Add to party" and "Battle" for a side-by-side table with the best value per row marked and a winner. |
 | An effect, without the vocabulary | `put opponent to sleep` | The moves that cause sleep, abilities around sleep, and the Pokémon that learn or have them, each with the sentence that links it. |
 | A strategy across categories | `rain team` | Three groups in one view: abilities that use rain, moves that mention it, Pokémon that benefit (and why). |
 
@@ -199,7 +199,7 @@ skips the tests that need Postgres.
 - Ask who **has a move or ability** (`pokemon with levitate`, `which pokemon can learn thunder`).
 - Ask for a **group** (`starter`, `water starter`, `fossil pokemon`, `eeveelution`).
 - Ask a **strategy** question (`rain team`, `sun team`, `paralysis team`) and get a bundle across categories.
-- **Compare** up to three Pokémon in a link you can share.
+- **Battle (compare)** up to three Pokémon in a link you can share.
 - See **why** each result matched, and how your query was read.
 
 **You cannot (yet)**
@@ -261,7 +261,7 @@ index. Both are enforced by tests. Details are in the [design notes](#design-not
 - **Redis or any cache:** the data is static and small, and indexed Postgres answers in milliseconds. A cache adds a service and an invalidation problem for nothing measurable.
 - **Embeddings, for now:** the golden-suite misses turned out to be structural or vocabulary gaps that a rule fixed exactly and explainably, so vectors did not pay for themselves. They are kept as a measured option, judged on the golden suite (see next steps).
 - **A graph extension such as Apache AGE:** the graph is one hop deep with about 4,300 edges, which a join handles. AGE would need its own Postgres image, Cypher instead of Bob, and weaker index checks. It would earn its place with evolution chains or type-effectiveness paths, which this dataset does not have.
-- **DaisyUI and a JS front end:** both need a build step or a CDN; the hand-made 13 KB stylesheet keeps the app offline and dependency-free.
+- **DaisyUI and a JS front end:** both need a build step or a CDN; the hand-made 15 KB stylesheet keeps the app offline and dependency-free.
 
 ## How it was validated
 
@@ -538,7 +538,7 @@ JavaScript; HTMX only removes the full reload.
 |---|---|
 | `/` | search box and four example questions |
 | `/?q=...` | results; the URL is shareable and reloadable |
-| `/compare?p=raichu&p=jolteon` | side-by-side table for up to three Pokémon |
+| `/compare?p=raichu&p=jolteon` | battle table (side by side) for up to three Pokémon |
 | `/healthz`, `/readyz` | liveness, and readiness (pings the database) |
 | `/static/...` | embedded CSS, JS and htmx, cached for a year under a content hash |
 
@@ -548,7 +548,7 @@ JavaScript; HTMX only removes the full reload.
 - **Every result explains itself:** chips show how the query was read (types,
   sort, concepts), each move and ability shows why it matched, and each Pokémon
   lists the move, ability or type that links it to the query.
-- **Compare is stateless:** ticking "Add to compare" fills a plain GET form, so a
+- **Compare is stateless:** ticking "Add to party" fills a plain GET form, so a
   comparison is just a link. Best value per row is marked with a triangle and
   bold colour, not colour alone.
 - **Errors:** one handler. Browsers and HTMX get an error page or fragment with
@@ -557,12 +557,13 @@ JavaScript; HTMX only removes the full reload.
 - **Security headers:** strict Content-Security-Policy (own scripts and styles,
   no eval), `nosniff`, referrer policy. Templ escapes all output; a test checks
   a script payload in the query is escaped.
+- **Look and feel:** a mobile-first trainer-quest theme. The four example searches are quests, "Professor Chen" explains how a query was read, a card's border shows rarity (from the base stat total, also written out), and compare is a "Battle" with a round count and a winner. Nothing is faked: there are no XP or levels, since nothing is stored.
 - **Offline:** CSS, JS and htmx are embedded, with no CDN or build step. The one
   external request is optional Google Fonts; without network the page falls back
   to system fonts. Images are not used at all, so the sprites in the dataset are
   never needed. The Pokémon tiles are drawn from the dex number and type.
 - **Design deviation:** the skill's default is DaisyUI, which needs either a CDN
-  or a Node build. I wrote a small hand-made stylesheet instead (about 13 KB)
+  or a Node build. I wrote a small hand-made stylesheet instead (about 15 KB)
   to keep `docker compose up` offline and dependency-free. Templ output is
   committed (`*_templ.go`), so building needs no `templ` binary; run
   `make generate` after editing a `.templ` file.
