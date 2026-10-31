@@ -30,3 +30,43 @@
   document.addEventListener('htmx:afterSwap', sync);
   document.addEventListener('DOMContentLoaded', sync);
 })();
+
+// Result tabs: the server renders every group stacked and the tab bar hidden.
+// This turns them into tabs (one panel visible), with arrow, Home and End keys.
+(function () {
+  function select(bar, tab) {
+    var tabs = Array.prototype.slice.call(bar.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (t) {
+      var on = t === tab;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+  }
+
+  function init() {
+    var bar = document.querySelector('[data-tabs]');
+    if (!bar) return;
+    bar.hidden = false;
+    select(bar, bar.querySelector('[aria-selected="true"]') || bar.querySelector('[role="tab"]'));
+  }
+
+  document.addEventListener('click', function (e) {
+    var tab = e.target.closest && e.target.closest('[role="tab"]');
+    if (tab) select(tab.parentNode, tab);
+  });
+  document.addEventListener('keydown', function (e) {
+    var tab = e.target.closest && e.target.closest('[role="tab"]');
+    if (!tab) return;
+    var tabs = Array.prototype.slice.call(tab.parentNode.querySelectorAll('[role="tab"]'));
+    var i = tabs.indexOf(tab);
+    var next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    var t = tabs[(next + tabs.length) % tabs.length];
+    select(tab.parentNode, t);
+    t.focus();
+  });
+  document.addEventListener('htmx:afterSwap', init);
+  document.addEventListener('DOMContentLoaded', init);
+})();

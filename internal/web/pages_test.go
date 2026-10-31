@@ -125,6 +125,28 @@ func TestSearchPageAndFragment(t *testing.T) {
 	}
 }
 
+func TestResultTabs(t *testing.T) {
+	jolteon := search.Item{Kind: store.KindPokemon, ID: 135, Name: "jolteon", Title: "Jolteon", Pokemon: &store.Pokemon{ID: 135, Name: "jolteon", Types: []string{"electric"}}}
+	thunder := search.Item{Kind: store.KindMove, ID: 85, Name: "thunder", Title: "Thunder", Move: &store.Move{ID: 85, Name: "thunder", Type: "electric"}}
+	pokemon := search.Group{Title: "Pokémon", Kind: store.KindPokemon, Items: []search.Item{jolteon}}
+	moves := search.Group{Title: "Moves", Kind: store.KindMove, Items: []search.Item{thunder, thunder}}
+
+	multi := get(pageServer(t, &fakeSearch{resp: search.Response{Groups: []search.Group{moves, pokemon}}}, &fakePokedex{}), "/?q=x", nil).Body.String()
+	for _, want := range []string{`role="tablist"`, `id="tab-0"`, `aria-controls="panel-1"`, `role="tabpanel"`, `aria-labelledby="tab-1"`, "Moves", "Pokémon"} {
+		if !strings.Contains(multi, want) {
+			t.Errorf("multi-kind results lack %q", want)
+		}
+	}
+	if strings.Index(multi, `id="tab-0"`) > strings.Index(multi, `id="panel-0"`) || !strings.Contains(multi, `aria-selected="true"`) {
+		t.Error("the first group should be the selected tab, with the bar before the panels")
+	}
+
+	single := get(pageServer(t, &fakeSearch{resp: search.Response{Groups: []search.Group{pokemon}}}, &fakePokedex{}), "/?q=x", nil).Body.String()
+	if strings.Contains(single, `role="tablist"`) || strings.Contains(single, `role="tabpanel"`) {
+		t.Error("a single kind needs no tabs")
+	}
+}
+
 func TestSearchEscapesHostileInput(t *testing.T) {
 	payload := `"><script>alert(1)</script>`
 	e := pageServer(t, &fakeSearch{}, &fakePokedex{})

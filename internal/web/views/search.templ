@@ -110,8 +110,19 @@ templ Results(query string, r search.Response) {
 		if len(r.Groups) == 0 {
 			@Empty(query)
 		}
-		for _, g := range r.Groups {
-			@Group(g, r.Query.Sort)
+		if len(r.Groups) > 1 {
+			<div class="tabs" role="tablist" aria-label="Result types" data-tabs hidden>
+				for i, g := range r.Groups {
+					<button class="tab" type="button" role="tab" id={ tabID(i) } aria-controls={ panelID(i) } aria-selected={ selected(i == 0) } tabindex={ tabIndex(i == 0) }>
+						@Icon(kindIcon(g.Kind))
+						{ kindLabel(g.Kind) }
+						<span class="pill">{ count(len(g.Items)) }</span>
+					</button>
+				}
+			</div>
+		}
+		for i, g := range r.Groups {
+			@Group(g, r.Query.Sort, i, len(r.Groups) > 1)
 		}
 	</div>
 	if hasPokemon(r) {
@@ -131,8 +142,8 @@ templ Empty(query string) {
 	</div>
 }
 
-templ Group(g search.Group, sorted store.Stat) {
-	<section class="group" aria-label={ g.Title }>
+templ Group(g search.Group, sorted store.Stat, i int, tabbed bool) {
+	<section class="group" aria-label={ g.Title } { groupAttrs(i, tabbed)... }>
 		<header>
 			<h2>{ g.Title }</h2>
 			<span class="pill">{ count(len(g.Items)) }</span>

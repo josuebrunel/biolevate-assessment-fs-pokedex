@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/a-h/templ"
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
 )
 
@@ -125,3 +126,51 @@ func moveMeta(m store.Move) string {
 func count(n int) string { return fmt.Sprintf("%d", n) }
 
 func queryEscape(s string) string { return url.QueryEscape(s) }
+
+// kindLabel names a result kind on its tab.
+func kindLabel(k store.Kind) string {
+	switch k {
+	case store.KindMove:
+		return "Moves"
+	case store.KindAbility:
+		return "Abilities"
+	}
+	return "Pokémon"
+}
+
+func kindIcon(k store.Kind) string {
+	switch k {
+	case store.KindMove:
+		return "move"
+	case store.KindAbility:
+		return "ability"
+	}
+	return "party"
+}
+
+func tabID(i int) string   { return fmt.Sprintf("tab-%d", i) }
+func panelID(i int) string { return fmt.Sprintf("panel-%d", i) }
+
+func selected(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
+}
+
+func tabIndex(b bool) string {
+	if b {
+		return "0"
+	}
+	return "-1"
+}
+
+// groupAttrs makes a result group a tab panel when the results are tabbed.
+// Without JavaScript every panel stays visible, so the page degrades to the
+// stacked layout.
+func groupAttrs(i int, tabbed bool) templ.Attributes {
+	if !tabbed {
+		return nil
+	}
+	return templ.Attributes{"role": "tabpanel", "id": panelID(i), "aria-labelledby": tabID(i), "tabindex": "0"}
+}

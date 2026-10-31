@@ -244,3 +244,23 @@ footer .wrap { display: grid; gap: 6px; }
 .quest { grid-template-columns: auto 1fr; align-items: center; column-gap: 12px; }
 .quest > :not(.quest-ico):not(.tag) { grid-column: 1 / -1; }
 .quest .tag { align-self: center; }
+
+/* result tabs: shown by app.js; without it every group stays visible and stacked */
+.tabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; margin: 6px 0 10px; }
+.tabs[hidden] { display: none; }
+.tab { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; min-height: 48px; padding: 4px 8px; border: 3px solid var(--edge); border-bottom-width: 5px; border-radius: 14px; background: var(--panel); color: var(--ink); font-weight: 800; font-size: .95rem; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--panel-2); border-color: var(--edge-hi); }
+.tab .pill { padding: 0 8px; }
+.group[role="tabpanel"][hidden] { display: none; }
+.group[role="tabpanel"] > header { margin-top: 8px; }
+
+/* narrow phones: the header shows icons only, so brand, nav and theme fit on one line */
+.brand { white-space: nowrap; }
+@media (max-width: 459px) {
+  nav a { padding: 0 11px; }
+  nav a .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+@media (max-width: 459px) {
+  .tab { flex-direction: column; flex-wrap: nowrap; gap: 2px; line-height: 1.15; }
+  .tab .ico { display: none; }
+}
