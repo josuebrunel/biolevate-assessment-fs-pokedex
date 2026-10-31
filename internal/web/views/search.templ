@@ -1,6 +1,8 @@
 package views
 
 import (
+	"strings"
+
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/search"
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
 )
@@ -45,6 +47,7 @@ templ Search(m Meta, p SearchPage) {
 			<h1 id="home-title">Ask the Pokédex the way you think.</h1>
 			<p class="lede">Half a name, a team slot to fill, a status effect, a weather plan. Type it in plain words and every result says why it matched.</p>
 			@SearchForm(p.Query)
+			<p class="note hint">Leave something out with <code>not</code>, <code>!</code> or <code>-</code>: <a href="/?q=electric+-flying">electric -flying</a></p>
 		</section>
 		<div id="content" aria-live="polite">
 			@Content(p)
@@ -101,7 +104,7 @@ templ Results(query string, r search.Response) {
 				if len(r.Interpretation) > 0 || len(r.Concepts) > 0 {
 					<div class="chips">
 						for _, i := range r.Interpretation {
-							<span class="read">{ i }</span>
+							<span class={ "read", templ.KV("neg", strings.HasPrefix(i, "not ")) }>{ i }</span>
 						}
 						for _, c := range r.Concepts {
 							<span class="read">concept: { c }</span>
@@ -136,7 +139,7 @@ templ Results(query string, r search.Response) {
 templ Empty(query string) {
 	<div class="empty">
 		<h2>Nothing matched “{ query }”</h2>
-		<p class="note">Try a Pokémon name or its first letters, a type with a stat (“fast electric”), an effect (“put opponent to sleep”) or a plan (“rain team”).</p>
+		<p class="note">Try a Pokémon name or its first letters, a type with a stat (“fast electric”), an effect (“put opponent to sleep”), a plan (“rain team”) or an exclusion (“electric -flying”).</p>
 		<div class="chips">
 			for _, s := range Scenarios {
 				<a class="chip" href={ templ.SafeURL("/?q=" + queryEscape(s.Query)) }>{ s.Query }</a>

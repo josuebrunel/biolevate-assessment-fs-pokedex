@@ -76,7 +76,7 @@ func TestHomeListsScenarios(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d", rec.Code)
 	}
-	for _, want := range []string{"<title>Chen Lab Pokédex", `name="description"`, `property="og:title"`, `name="twitter:card"`, "application/ld+json", "/static/theme.js", `class="theme"`, "put opponent to sleep", "rain team"} {
+	for _, want := range []string{"<title>Chen Lab Pokédex", `name="description"`, `property="og:title"`, `name="twitter:card"`, "application/ld+json", "/static/theme.js", `class="theme"`, "put opponent to sleep", "rain team", "electric -flying"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("home lacks %q", want)
 		}
