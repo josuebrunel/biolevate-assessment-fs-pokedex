@@ -16,22 +16,16 @@
   - [Product expectations](#product-expectations)
     - [Illustrative search challenges](#illustrative-search-challenges)
 - [Solution](#solution)
-  - [Status](#status)
-  - [Run it](#run-it)
-  - [Stack](#stack)
-  - [Data and schema](#data-and-schema)
-  - [Store layer](#store-layer)
-  - [Query optimization](#query-optimization)
-  - [Query parser](#query-parser)
-  - [Lexical retriever](#lexical-retriever)
-  - [Concept map](#concept-map)
-  - [Graph expansion and the engine](#graph-expansion-and-the-engine)
-  - [Web UI](#web-ui)
-  - [Golden-query suite](#golden-query-suite)
-  - [Hardening and operations](#hardening-and-operations)
-  - [Logging](#logging)
-  - [Code conventions](#code-conventions)
-  - [Commands](#commands)
+  - [At a glance](#at-a-glance)
+  - [Quick start](#quick-start)
+  - [What you can do, and what you cannot](#what-you-can-do-and-what-you-cannot)
+  - [How search works](#how-search-works)
+  - [Tech stack, and why](#tech-stack-and-why)
+  - [How it was validated](#how-it-was-validated)
+  - [AI use disclosure](#ai-use-disclosure)
+  - [Next steps](#next-steps)
+  - [Design notes](#design-notes)
+  - [Reference](#reference)
 
 # Assessment
 
@@ -137,52 +131,169 @@ feature list. Your application does not need to solve all four.
 
 # Solution
 
-Work is tracked in the [overview issue](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/1).
-This section grows with each step: design decisions, limitations and the
-AI-use disclosure land here as they are built.
+**A search engine for the Kanto Pokédex that understands what you mean and
+tells you why each result is there.** Type half a name, a team need, an effect
+or a strategy; get Pokémon, moves and abilities grouped, ranked and explained.
+It runs with one command, offline, on Postgres alone.
 
-## Status
+![Results for "rain team": abilities, moves and Pokémon, each with the reason it matched](docs/screenshot-results.jpg)
 
-| Step | State |
-|---|---|
-| Project scaffold + CI | done |
-| [Docker Compose + Goose schema](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/2) | done |
-| [Import command](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/3) | done |
-| [Store layer](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/4) | done |
-| [Query optimization guard](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/5) | done |
-| [Query parser](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/6) | done |
-| [Lexical retriever](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/7) | done |
-| [Logging](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/8) | done |
-| [Concept map](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/11) | done |
-| [Graph expansion and explanations](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/12) | done |
-| [Web UI and compare view](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/13) | done |
-| [Golden-query suite](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/14) | done |
-| [Hardening: limits, pool, container, smoke test](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/15) | done |
-| Optional embeddings, write-up | planned |
+## At a glance
 
-## Run it
+The four situations from the brief, and what each one gives you. Open the app and
+click the matching example, or type the query.
+
+| Situation | Try | What you get |
+|---|---|---|
+| Partly remembered name | `bulba` | Bulbasaur first, with type, genus and stats to confirm. Typos work too (`pikchu`, `charzard`). |
+| Fast Electric candidates, then a choice | `fast electric` | Electric types sorted by speed, then "Add to compare" for a side-by-side table with the best value per row marked. |
+| An effect, without the vocabulary | `put opponent to sleep` | The moves that cause sleep, abilities around sleep, and the Pokémon that learn or have them, each with the sentence that links it. |
+| A strategy across categories | `rain team` | Three groups in one view: abilities that use rain, moves that mention it, Pokémon that benefit (and why). |
+
+What was delivered:
+
+- **The app:** server-rendered web UI, live search, shareable result URLs, compare view.
+- **The engine:** rule-based query parser, lexical retrieval with typo tolerance, a concept map for vocabulary, graph expansion from moves and abilities to Pokémon, and an explanation for every result.
+- **The proof:** unit and integration tests on real Postgres, a 58-query golden suite that reports recall and ranking, a query-plan guard that fails any query that cannot use an index, and a CI smoke test of the real container.
+- **The operations:** structured logs with request IDs, health and readiness probes, request and statement timeouts, rate limiting, a small hardened image.
+- **The write-up:** this README (choices, limits, next steps, AI disclosure).
+
+## Quick start
+
+You need Docker with Compose. Nothing else.
 
 ```sh
 docker compose up --build
 ```
 
-This starts Postgres, applies the migrations, imports the dataset and serves the
-app on http://localhost:8080. If port 5432
-is already taken on your machine, use `DB_PORT=5433 docker compose up --build`.
+Open **http://localhost:8080**. This starts Postgres, applies the migrations,
+imports the dataset (embedded in the binary, checked against the published
+SHA-256) and serves the app. No network access is needed after the images are built.
 
-To run the app outside Docker, start only the database with
-`docker compose up -d --wait db`, then `make migrate-up import run`.
+If port 5432 or 8080 is taken on your machine, use
+`DB_PORT=5433 APP_PORT=8081 docker compose up --build`.
 
-## Stack
+<details>
+<summary>Run without Docker for the app, run the tests</summary>
 
-Go, Echo v5, Templ, HTMX, Postgres (with `pg_trgm`; pgvector image ready for the optional
-embeddings step), Goose migrations, Bob for queries. Postgres does the heavy
-lifting for search: weighted full-text (`tsvector`), typo and prefix tolerance
-(trigram indexes) and, optionally later, vectors, all in one engine. No Redis:
-the corpus is static and small, so a cache would add a moving part for no
-measurable gain.
+```sh
+docker compose up -d --wait db      # only the database
+make migrate-up import run          # needs Go 1.27
+make test-integration               # every test, against the compose database
+make eval                           # print the golden-query report
+make lint                           # go vet and golangci-lint
+```
 
-## Data and schema
+With `DB_PORT=5433` set, `make` targets use that port too. `make test` alone
+skips the tests that need Postgres.
+
+</details>
+
+## What you can do, and what you cannot
+
+**You can**
+
+- Search by **name**, partial name or typo (`bulba`, `pikchu`, `mr mime`, `nidoran`).
+- Search by **criteria**: a type plus a stat word (`fast electric`, `bulky water`, `strongest fire`, `top 3 fastest`).
+- Search by **effect or intent** in plain words (`put opponent to sleep`, `paralyze`, `heal myself`, `burn`).
+- Ask a **strategy** question (`rain team`, `sun team`, `paralysis team`) and get a bundle across categories.
+- **Compare** up to three Pokémon in a link you can share.
+- See **why** each result matched, and how your query was read.
+
+**You cannot (yet)**. These are known, measured, and listed with their reasons.
+
+| Query | Why it misses |
+|---|---|
+| `pokemon with levitate`, `which pokemon can learn thunder` | A move or ability named inside a question is not followed back to the Pokémon that have it. |
+| `legendary` | Stored in the data, but not searchable. |
+| `heaviest`, `tallest` | Weight and height are not sortable criteria. |
+| `raise defense`, `poison the enemy` | Read as a sort or a type filter, so the effect text is not searched for it. |
+| `one hit knock out`, `ohko` | No concept or alias for it. |
+| `fire starter` | "Starter" is not a concept. |
+| `chu` | Fragments under three characters are not searched. |
+
+Data caveats, from the dataset itself: abilities are current PokéAPI
+associations, not Generation 1 (which had none), so some results use modern
+semantics; and the data has no Rain Dance move, so a rain team is built from
+abilities, weather-related moves and Water types. Both are shown honestly in the results.
+
+## How search works
+
+```
+ query ─▶ 1 Parse ─▶ 2 Retrieve ─▶ 3 Fuse ─▶ 4 Expand the graph ─▶ 5 Group and explain ─▶ UI
+          rules       names         ranks     move or ability         reasons, evidence,
+          only        trigrams      merged    ─▶ Pokémon              strategy bundles
+                      full-text
+                      criteria
+                      concept map
+```
+
+| Step | What happens | Why this way |
+|---|---|---|
+| 1. Parse | Rules read the text into types, a stat sort, entity kinds, "top N" and strategy words. | Pure and deterministic, so every reading can be explained and tested. No model needed. |
+| 2. Retrieve | Postgres answers in parallel lists: exact and prefix names, trigram names for typos, criteria listings, and weighted full-text over effects and descriptions. The concept map first expands words such as `asleep` into what the data says (`puts the target to sleep`). | One engine does names, typos and meaning. Indexes (GIN full-text and trigram) keep every query fast. |
+| 3. Fuse | Reciprocal rank fusion merges the lists by rank, not by raw score. | Trigram similarity, text rank and stat sorts are not comparable, but ranks are. An item found by several sources rises. |
+| 4. Expand | The top matched moves and abilities lead, with one batched query each, to the Pokémon that learn or have them. The strategy concept adds the types it favours (rain: Water). | This is what turns "a list of moves" into "who can do it". Every link is kept as evidence. |
+| 5. Group and explain | Results are grouped by kind (or by role for a strategy), ordered by relevance, and each carries its reasons. | Users trust a result they can check. |
+
+Two properties hold throughout: a search costs a **constant number of queries**
+(about a dozen, however many results), and every query must be able to use an
+index. Both are enforced by tests. Details are in the [design notes](#design-notes).
+
+## Tech stack, and why
+
+| Piece | Choice | Why |
+|---|---|---|
+| Language, web | Go, Echo v5 | Small static binary, strong standard library, fast to run and review. |
+| Views | Templ, HTMX, hand-written CSS | Server-rendered pages that work without JavaScript; HTMX only removes full reloads. No Node build, nothing fetched at runtime, so it works offline. |
+| Database | Postgres 17 with `pg_trgm` | Full-text, typo tolerance and relations in one engine, one container. SQLite has no edit-distance matching. |
+| Queries | Bob query builder | Bound parameters only, so no string-built SQL. |
+| Migrations | Goose | `-migrate up/down/revert` on the binary itself. |
+| Config | `xenv`, `APP_` variables | One typed struct, validated at startup. |
+| Logging | `log/slog` | Structured, with a request ID on every line. |
+| Packaging | Docker Compose, distroless image | `docker compose up`; about 17 MB, non-root. |
+
+**Left out on purpose**
+
+- **Redis or any cache:** the data is static and small, and indexed Postgres answers in milliseconds. A cache adds a service and an invalidation problem for nothing measurable.
+- **Embeddings, for now:** the golden suite shows most misses are structural or vocabulary gaps that a rule fixes exactly and explainably. Vectors are kept as a measured option, judged on the golden suite (see next steps).
+- **A graph extension such as Apache AGE:** the graph is one hop deep with about 4,300 edges, which a join handles. AGE would need its own Postgres image, Cypher instead of Bob, and weaker index checks. It would earn its place with evolution chains or type-effectiveness paths, which this dataset does not have.
+- **DaisyUI and a JS front end:** both need a build step or a CDN; the hand-made 13 KB stylesheet keeps the app offline and dependency-free.
+
+## How it was validated
+
+| Check | What it proves |
+|---|---|
+| **Golden suite** (58 queries) | Every core query returns the expected results within the expected rank. Reports recall and mean reciprocal rank per category. Misses are recorded as known limits and must stay failing until fixed. |
+| **Index guard** | Every query runs through a recorder that checks its plan; one that would scan a table fails the test. |
+| **Query-count test** | A search issues the same number of queries for 2 or 40 results per group (no N+1). |
+| **Real-Postgres tests** | Store, importer (idempotent, transactional), migrations and the web layer run against a throwaway database. |
+| **End-to-end test** | The four challenges plus a typo, through HTTP, the engine, Postgres and the templates. |
+| **Security tests** | Hostile input stays data (SQL, tsquery syntax, script tags are escaped); inputs are validated; a test asserts a password never reaches the logs. |
+| **CI** | Lint, vet, race-enabled tests, and a smoke job that builds the image and exercises the running stack. |
+
+## AI use disclosure
+
+- **Tool:** Claude Code (Anthropic), working as a pair programmer in the terminal, throughout the project.
+- **Used for:** planning the architecture and breaking it into tickets; writing Go code, SQL migrations, Templ views and tests; the visual design preview; debugging; and drafting this README.
+- **Decisions made by the author:** the stack, Postgres doing the heavy lifting, no Redis, optional embeddings only if measured, one ticket per step, and approval of the UI direction before it was built.
+- **How output was validated:** every step ships with tests that run in CI against real Postgres; ranking is checked by the golden suite, not by eye; the query-plan guard and the query-count test keep performance claims honest; the UI was exercised in a real browser; and bugs found along the way are written down where they matter (for example in the concept map notes).
+- The author remains responsible for understanding and explaining every part of the submission.
+
+## Next steps
+
+1. **Fix the lexical misses** above. Most need a rule, an alias or a concept, and each one is already a test case.
+2. **Measure embeddings** (pgvector in the same database, a local model, silent fallback to lexical). Keep them only if they beat the golden suite by enough to justify an extra service.
+3. **Richer data** if allowed: evolution chains, type effectiveness, learn methods. This is where a graph extension would start to pay.
+4. **More languages** and spoken-form queries.
+5. **Distributed rate limiting and a cache** only if traffic ever justified them.
+
+## Design notes
+
+The deep dives behind the summary above, in build order. Skip them unless you
+want the reasoning.
+
+### Data and schema
 
 The reference snapshot is committed as `internal/data/pokedex.json` and embedded
 in the binary, so the app is reproducible offline. It is verified against the
@@ -200,7 +311,7 @@ and relations are rebuilt, so running it twice leaves identical row counts.
 One data caveat: abilities come from current PokéAPI associations, not Gen 1
 (which had none), so ability results can include modern-game semantics.
 
-## Store layer
+### Store layer
 
 `internal/store` is the read-only, Bob-built data access layer. It offers
 retrieval primitives and deliberately no ranking policy; that belongs to the
@@ -219,7 +330,7 @@ fixed allowlists, never from user input, and `LIKE` wildcards in queries are
 escaped. Tests run against the real dataset and assert query counts, so an N+1
 regression fails the build.
 
-## Query optimization
+### Query optimization
 
 Every query must be able to use an index, and this is enforced rather than
 reviewed by eye. Tests run their queries through `testdb.Recorder`, which
@@ -241,7 +352,7 @@ The importer runs `ANALYZE` after loading so the planner starts with fresh
 statistics. Adding a query? Exercise it in a test that uses the recorder; if it
 needs an index the guard will say so, and the index goes in a new migration.
 
-## Query parser
+### Query parser
 
 `search.Parse` reads free text into a structured `Query` with no database and no
 model: it is pure, deterministic and fuzz-tested. It is deliberately rule-based
@@ -263,7 +374,7 @@ move effects, so the retrievers decide how to combine types, terms and the full
 token list. `Interpretation()` returns short phrases ("type: electric", "sorted
 by speed") so the UI can show users how their query was read.
 
-## Lexical retriever
+### Lexical retriever
 
 `search.Lexical` turns a parsed query into ranked results across Pokémon, moves
 and abilities. It sits behind a small `Retriever` interface so the optional
@@ -302,7 +413,7 @@ Known limits, addressed in the next steps:
   `hydration`), moves whose text mentions weather (`thunder`, `solar-beam`) and
   Water types.
 
-## Concept map
+### Concept map
 
 Users do not know the data's vocabulary: they type "asleep", "drowsy" or
 "paralysis", the data says "puts the target to sleep" and "paralyzes". A concept
@@ -345,7 +456,7 @@ Postgres inferred its bind parameter as an integer from the `ELSE 0` branch and
 truncated 0.15. The parameter is now cast explicitly, and a test fails if the
 boost stops working.
 
-## Graph expansion and the engine
+### Graph expansion and the engine
 
 `search.Engine` is the entry point the UI calls. For one input it parses,
 retrieves, follows the graph, hydrates and groups, and returns a `Response`:
@@ -390,7 +501,7 @@ two relation lookups, up to a few type lookups and three hydrations. A test
 asserts the count is the same for 2 and for 40 items per group, and every query
 goes through the index-usage guard.
 
-## Web UI
+### Web UI
 
 Server-rendered with Templ, enhanced with HTMX. Every page works without
 JavaScript; HTMX only removes the full reload.
@@ -428,7 +539,7 @@ JavaScript; HTMX only removes the full reload.
   committed (`*_templ.go`), so building needs no `templ` binary; run
   `make generate` after editing a `.templ` file.
 
-## Golden-query suite
+### Golden-query suite
 
 `internal/golden` scores the engine against 58 queries with known good answers
 (`cases.json`), through the real engine and Postgres. Cases cover the four
@@ -458,7 +569,7 @@ the three-character minimum). They are written down instead of hidden. A known
 case must fail, so when one starts passing the suite fails until its flag is
 removed. Run `make eval` for the full report; the suite also runs in CI.
 
-## Hardening and operations
+### Hardening and operations
 
 All settings are environment variables with the `APP_` prefix, loaded and
 validated once at startup. A value that would misbehave under load (for example
@@ -498,7 +609,7 @@ message instead of surfacing later.
   `docker compose up --wait` and checks `/readyz`, a search and the compare view,
   so a broken Dockerfile or migration cannot pass unnoticed.
 
-## Logging
+### Logging
 
 Logs are structured (`log/slog`), one JSON object per line by default.
 
@@ -526,7 +637,7 @@ Logs are structured (`log/slog`), one JSON object per line by default.
   database URL to scheme, host and database name. A test asserts a password
   never reaches the output.
 
-## Code conventions
+### Code conventions
 
 - **DRY, with generics where they pay off:** one `getMany[T]` loads any table by
   id, `rowsOf[T]` builds import rows, `candidatesOf[T]` maps search rows to
@@ -539,7 +650,9 @@ Logs are structured (`log/slog`), one JSON object per line by default.
 - Naming follows `<Noun><Operation>` (`PokemonGetMany`, `MoveList`).
 - Errors are wrapped with context and logged once, centrally.
 
-## Commands
+## Reference
+
+### Commands
 
 | Command | Purpose |
 |---|---|
@@ -551,3 +664,26 @@ Logs are structured (`log/slog`), one JSON object per line by default.
 | `make test-integration` | starts the compose database and runs every test |
 | `make eval` | print the golden-query report |
 | `make lint` | `go vet` and `golangci-lint` |
+
+### Project status
+
+Work is tracked in the [overview issue](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/1), one ticket per step.
+
+| Step | State |
+|---|---|
+| Project scaffold + CI | done |
+| [Docker Compose + Goose schema](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/2) | done |
+| [Import command](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/3) | done |
+| [Store layer](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/4) | done |
+| [Query optimization guard](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/5) | done |
+| [Query parser](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/6) | done |
+| [Lexical retriever](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/7) | done |
+| [Logging](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/8) | done |
+| [Concept map](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/11) | done |
+| [Graph expansion and explanations](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/12) | done |
+| [Web UI and compare view](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/13) | done |
+| [Golden-query suite](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/14) | done |
+| [Hardening: limits, pool, container, smoke test](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/15) | done |
+| [README write-up and AI disclosure](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/16) | done |
+| [Fix the known lexical misses](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/17) | next |
+| Optional embeddings | later, only if measured |
