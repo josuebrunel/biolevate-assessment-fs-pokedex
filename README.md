@@ -18,6 +18,8 @@
 - [Solution](#solution)
   - [At a glance](#at-a-glance)
   - [Quick start](#quick-start)
+    - [Prerequisites](#prerequisites)
+    - [Run it](#run-it)
   - [What you can do, and what you cannot](#what-you-can-do-and-what-you-cannot)
   - [How search works](#how-search-works)
   - [Tech stack, and why](#tech-stack-and-why)
@@ -160,7 +162,17 @@ What was delivered:
 
 ## Quick start
 
-You need Docker with Compose. Nothing else.
+### Prerequisites
+
+| To | You need |
+|---|---|
+| Run the app | [Docker](https://docs.docker.com/get-docker/) with the Compose plugin (`docker compose version` should work), and a couple of GB of free disk for the images. Nothing else: no Go, Node or Postgres install. |
+| Develop and test outside Docker (optional) | Go 1.27, `make`, Docker for the database, plus `templ` (only to edit `.templ` files) and `golangci-lint` (only for `make lint`). |
+
+The first build downloads the Postgres and Go images, so it needs network
+access once. Free ports: 8080 for the app and 5432 for the database (both can be changed, see below).
+
+### Run it
 
 ```sh
 docker compose up --build
