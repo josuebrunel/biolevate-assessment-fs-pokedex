@@ -25,6 +25,7 @@
   - [Query parser](#query-parser)
   - [Lexical retriever](#lexical-retriever)
   - [Concept map](#concept-map)
+  - [Graph expansion and the engine](#graph-expansion-and-the-engine)
   - [Logging](#logging)
   - [Code conventions](#code-conventions)
   - [Commands](#commands)
@@ -150,6 +151,7 @@ AI-use disclosure land here as they are built.
 | [Lexical retriever](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/7) | done |
 | [Logging](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/8) | done |
 | [Concept map](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/11) | done |
+| [Graph expansion and explanations](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/12) | done |
 | Search (query parsing, retrieval, concepts, graph expansion) | planned |
 | Web UI and compare view | planned |
 | Golden-query suite, hardening, write-up | planned |
@@ -289,8 +291,8 @@ Known limits, addressed in the next steps:
 - Pure lexical search cannot bridge vocabulary: the English stemmer treats
   `paralysis` and `paralyze` as different words. The concept map (next section)
   closes that gap.
-- Text hits only say that a term appears, not why an entity is relevant. Showing
-  that a Pokémon matters because it learns Hypnosis comes with graph expansion.
+- Text hits only say that a term appears, not why an entity is relevant. The
+  engine (below) adds the relationships: which Pokémon learn a matched move.
 - The dataset is Gen 1 only, so there is no Rain Dance move. A rain strategy has
   to be assembled from abilities (`swift-swim`, `rain-dish`, `dry-skin`,
   `hydration`), moves whose text mentions weather (`thunder`, `solar-beam`) and
@@ -338,6 +340,51 @@ One bug worth recording: the status boost was silently zero at first, because
 Postgres inferred its bind parameter as an integer from the `ELSE 0` branch and
 truncated 0.15. The parameter is now cast explicitly, and a test fails if the
 boost stops working.
+
+## Graph expansion and the engine
+
+`search.Engine` is the entry point the UI calls. For one input it parses,
+retrieves, follows the graph, hydrates and groups, and returns a `Response`:
+how the query was read, the matched concepts, and titled groups of items, each
+with a summary and the reasons it is there.
+
+**Graph expansion.** The top five matched moves and abilities lead to the
+Pokémon that learn or have them, with one batched query each. A Pokémon scores
+the sum of the match strength of everything linking it to the query, so one that
+learns several sleep moves outranks one that learns a single move. Every link is
+kept as `Evidence` and rendered as a sentence:
+
+```
+Drowzee  Hypnosis Pokémon
+  learns Hypnosis: Puts the target to sleep.
+  has ability Insomnia: Prevents sleep.
+```
+
+**Strategy queries** ("rain team") return a bundle across categories with role
+titles instead of a flat list:
+
+| Group | Source |
+|---|---|
+| Abilities related to Rain | `rain-dish`, `swift-swim`, `dry-skin`, `hydration` |
+| Moves related to Rain | moves whose text mentions weather (`thunder`, `solar-beam`) |
+| Pokémon that benefit from Rain | Pokémon with those abilities, plus Water types |
+
+The Water-type link comes from domain knowledge stored with the concept: a
+concept can list the `types` it favours (rain: Water, sun: Fire, sandstorm: Rock
+and Ground, hail: Ice). It applies only to strategy queries, so plain "rain"
+does not list every Water Pokémon, and the evidence says why ("Water type is
+favoured by Rain"). The dataset is Gen 1, so there is no Rain Dance to put at
+the head of the bundle; the abilities and the Water types carry it instead.
+
+**Group order.** Groups are ordered by their best retrieval score, not the fused
+score. Reaching a Pokémon through the graph raises its fused score and would
+always put "who can do it" ahead of "how to do it"; this keeps the moves first
+for "put opponent to sleep".
+
+**Cost.** A search issues a constant number of queries, about a dozen: retrieval,
+two relation lookups, up to a few type lookups and three hydrations. A test
+asserts the count is the same for 2 and for 40 items per group, and every query
+goes through the index-usage guard.
 
 ## Logging
 
