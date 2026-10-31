@@ -3,11 +3,13 @@ module github.com/josuebrunel/biolevate-assessment-fs-pokedex
 go 1.27.0
 
 require (
+	github.com/a-h/templ v0.3.1020
 	github.com/jackc/pgx/v5 v5.12.0
 	github.com/josuebrunel/gopkg/xenv v0.0.2
 	github.com/labstack/echo/v5 v5.4.4
 	github.com/pressly/goose/v3 v3.29.0
 	github.com/stephenafamo/bob v0.50.0
+	github.com/stephenafamo/scan v0.9.0
 )
 
 require (
@@ -18,7 +20,6 @@ require (
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/qdm12/reprint v0.0.0-20200326205758-722754a53494 // indirect
 	github.com/sethvargo/go-retry v0.5.0 // indirect
-	github.com/stephenafamo/scan v0.9.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/text v0.43.0 // indirect

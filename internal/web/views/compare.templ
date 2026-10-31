@@ -1,0 +1,73 @@
+package views
+
+import "github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
+
+templ ComparePage(m Meta, c Compare) {
+	@Layout(m, "compare") {
+		<div class="wrap section">
+			<p class="eyebrow">Compare</p>
+			<h1 style="font-size:clamp(1.6rem,5vw,2.3rem)">Side by side</h1>
+			if len(c.Pokemon) < 2 {
+				<div class="empty">
+					<h2>Nothing to compare yet</h2>
+					<p class="note">Search, then tick “Add to compare” on two or three Pokémon.</p>
+					<div><a class="btn" href="/?q=fast+electric" style="display:inline-grid;place-items:center;text-decoration:none">Search “fast electric”</a></div>
+				</div>
+			} else {
+				<p class="note">Base stats are out of 255. The best value in each row is marked with a triangle.</p>
+				@CompareTable(c)
+			}
+		</div>
+	}
+}
+
+templ CompareTable(c Compare) {
+	<div class="cmp-wrap" tabindex="0" role="region" aria-label="Comparison table, scrolls sideways on small screens">
+		<table class="cmp">
+			<thead>
+				<tr>
+					<th scope="col"><span class="visually-hidden">Measure</span></th>
+					for _, p := range c.Pokemon {
+						<th scope="col">
+							<div class="head">
+								@compareHead(p)
+							</div>
+						</th>
+					}
+				</tr>
+			</thead>
+			<tbody>
+				for _, r := range c.Rows {
+					<tr>
+						<th scope="row">{ r.Label }</th>
+						for _, cell := range r.Cells {
+							<td class={ bestClass(cell.Best) }>
+								<span class="v">{ cell.Text }</span>
+								if cell.Percent > 0 {
+									<div class="bar" aria-hidden="true"><i style={ "width:" + count(cell.Percent) + "%" }></i></div>
+								}
+							</td>
+						}
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+}
+
+templ compareHead(p store.Pokemon) {
+	<div class={ tileClass(p) } aria-hidden="true"><span class="dex">{ dex(p) }</span></div>
+	<h3>{ Title(p.Name) }</h3>
+	<span class="chips" style="gap:4px">
+		for _, t := range p.Types {
+			<span class={ badgeClass(t) }>{ t }</span>
+		}
+	</span>
+}
+
+func bestClass(best bool) string {
+	if best {
+		return "best"
+	}
+	return ""
+}

@@ -1,0 +1,31 @@
+package views
+
+import "strconv"
+
+// ErrorView is what an error page shows.
+type ErrorView struct {
+	Status    int
+	Message   string
+	RequestID string
+}
+
+templ ErrorPage(m Meta, e ErrorView) {
+	@Layout(m, "") {
+		<div class="wrap">
+			@ErrorBody(e)
+		</div>
+	}
+}
+
+// ErrorBody is also the fragment swapped in when a live search fails.
+templ ErrorBody(e ErrorView) {
+	<div class="error-page" role="alert">
+		<p class="eyebrow">Error { strconv.Itoa(e.Status) }</p>
+		<h1 style="font-size:clamp(1.6rem,5vw,2.3rem)">{ e.Message }</h1>
+		<p class="note">Try again, or go back to the search. If it keeps happening, quote the request ID below.</p>
+		<div><a class="btn" href="/" style="display:inline-grid;place-items:center;text-decoration:none">Back to search</a></div>
+		if e.RequestID != "" {
+			<p class="rid">Request ID: { e.RequestID }</p>
+		}
+	</div>
+}

@@ -1,0 +1,249 @@
+package views
+
+import (
+	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/search"
+	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
+)
+
+// Scenario is an example search shown on the home page.
+type Scenario struct {
+	N     string
+	Title string
+	Blurb string
+	Query string
+}
+
+// Scenarios are the four questions the engine is built to answer.
+var Scenarios = []Scenario{
+	{"01", "Recover something partially remembered", "A new trainer saw a Pokémon starting with “bulba”.", "bulba"},
+	{"02", "Find and compare candidates", "One team slot left. Fastest Electric types first, ready to compare.", "fast electric"},
+	{"03", "Discover an answer without the vocabulary", "Moves that cause sleep, then the Pokémon that can use them.", "put opponent to sleep"},
+	{"04", "Explore a strategy across categories", "Abilities, moves and Pokémon that work with rain, in one view.", "rain team"},
+}
+
+// SearchPage is the home page: the search box, and below it either the example
+// scenarios (no query) or the results (Response set).
+type SearchPage struct {
+	Query    string
+	Response *search.Response
+}
+
+templ SearchForm(query string) {
+	<form class="search" role="search" action="/" method="get" hx-get="/" hx-target="#content" hx-push-url="true" hx-trigger="submit, input changed delay:350ms from:#q" hx-sync="this:replace">
+		<label class="visually-hidden" for="q">Search the Pokédex</label>
+		<div class="field">
+			<input id="q" name="q" type="search" value={ query } maxlength="200" autocomplete="off" enterkeyhint="search" placeholder="Try “fast electric” or “put opponent to sleep”"/>
+			<button class="btn" type="submit">Search</button>
+		</div>
+	</form>
+}
+
+templ Search(m Meta, p SearchPage) {
+	@Layout(m, "search") {
+		<section class="hero" aria-labelledby="home-title">
+			<div class="wrap">
+				<p class="eyebrow">151 Pokémon · 164 moves · 114 abilities</p>
+				<h1 id="home-title">Ask the Pokédex the way you think.</h1>
+				<p class="lede">Half a name, a team slot to fill, a status effect you want, a weather plan. Type it in plain words and every result tells you why it matched.</p>
+				@SearchForm(p.Query)
+				<div class="chips" aria-label="Example searches">
+					for _, s := range Scenarios {
+						<a class="chip" href={ templ.SafeURL("/?q=" + queryEscape(s.Query)) }>{ s.Query }</a>
+					}
+				</div>
+			</div>
+		</section>
+		<div id="content" aria-live="polite">
+			@Content(p)
+		</div>
+	}
+}
+
+// Content is the swappable part of the page.
+templ Content(p SearchPage) {
+	if p.Response == nil {
+		@ScenarioList()
+	} else {
+		@Results(p.Query, *p.Response)
+	}
+}
+
+templ ScenarioList() {
+	<div class="wrap section" aria-labelledby="scen-title">
+		<h2 id="scen-title">Four questions it answers well</h2>
+		<div class="scenarios">
+			for _, s := range Scenarios {
+				<a class="scenario" href={ templ.SafeURL("/?q=" + queryEscape(s.Query)) }>
+					<span class="num">{ s.N }</span>
+					<h3>{ s.Title }</h3>
+					<p>{ s.Blurb }</p>
+					<q>{ s.Query }</q>
+				</a>
+			}
+		</div>
+	</div>
+}
+
+templ Results(query string, r search.Response) {
+	<div class="wrap">
+		<div class="results-head">
+			<h2 id="results-title">Results for “{ query }”</h2>
+			if len(r.Interpretation) > 0 || len(r.Concepts) > 0 {
+				<div>
+					<p class="note" style="margin-bottom:8px">How we read your query</p>
+					<div class="chips">
+						for _, i := range r.Interpretation {
+							<span class="chip read">{ i }</span>
+						}
+						for _, c := range r.Concepts {
+							<span class="chip read">concept: <b>{ c }</b></span>
+						}
+					</div>
+				</div>
+			}
+		</div>
+		if len(r.Groups) == 0 {
+			@Empty(query)
+		}
+		for _, g := range r.Groups {
+			@Group(g, r.Query.Sort)
+		}
+	</div>
+	if hasPokemon(r) {
+		@Tray()
+	}
+}
+
+templ Empty(query string) {
+	<div class="empty">
+		<h2>Nothing matched “{ query }”</h2>
+		<p class="note">Try a Pokémon name or its first letters, a type with a stat (“fast electric”), an effect (“put opponent to sleep”) or a plan (“rain team”).</p>
+		<div class="chips">
+			for _, s := range Scenarios {
+				<a class="chip" href={ templ.SafeURL("/?q=" + queryEscape(s.Query)) }>{ s.Query }</a>
+			}
+		</div>
+	</div>
+}
+
+templ Group(g search.Group, sorted store.Stat) {
+	<section class="group" aria-label={ g.Title }>
+		<header>
+			<h2>{ g.Title }</h2>
+			<span class="n">{ count(len(g.Items)) }</span>
+		</header>
+		if g.Kind == store.KindPokemon {
+			<div class="cards">
+				for _, it := range g.Items {
+					@PokemonCard(it, sorted)
+				}
+			</div>
+		} else {
+			<div class="rows">
+				for _, it := range g.Items {
+					@EntityRow(it)
+				}
+			</div>
+		}
+	</section>
+}
+
+templ PokemonCard(it search.Item, sorted store.Stat) {
+	if it.Pokemon != nil {
+		<article class="pk" aria-label={ Title(it.Name) }>
+			<div class={ tileClass(*it.Pokemon) } aria-hidden="true"><span class="dex">{ dex(*it.Pokemon) }</span></div>
+			<div class="pk-body">
+				<div class="pk-title">
+					<h3>{ it.Title }</h3>
+					<span class="genus">{ genus(*it.Pokemon) }</span>
+				</div>
+				<div class="chips" style="gap:6px">
+					for _, t := range it.Pokemon.Types {
+						<span class={ badgeClass(t) }>{ t }</span>
+					}
+					<span class="meta" style="margin-left:4px">BST { count(it.Pokemon.Stats.Total()) }</span>
+				</div>
+				@Evidence(it.Evidence)
+				@Stats(cardStats(*it.Pokemon, sorted))
+				<label class="pick"><input type="checkbox" name="p" value={ it.Name } form="compare-form"/> Add to compare</label>
+			</div>
+		</article>
+	}
+}
+
+templ Evidence(list []search.Evidence) {
+	if len(list) > 0 {
+		<ul class="evidence">
+			for _, e := range list {
+				if e.Kind == search.EvidenceType {
+					<li class="type"><span class="src">{ e.Why }</span></li>
+				} else {
+					<li>
+						<span class="src">
+							if e.Kind == search.EvidenceMove {
+								learns { Title(e.Name) }
+							} else {
+								has ability { Title(e.Name) }
+							}
+						</span>
+						if e.Why != "" {
+							<span class="fx">{ e.Why }</span>
+						}
+					</li>
+				}
+			}
+		</ul>
+	}
+}
+
+templ Stats(rows []statRow) {
+	<div class="stats">
+		for _, r := range rows {
+			<span>{ r.Label }</span>
+			<span class="bar" role="img" aria-label={ r.Label + " " + count(r.Value) + " of 255" }><i style={ "width:" + count(r.Percent()) + "%" }></i></span>
+			<span>{ count(r.Value) }</span>
+		}
+	</div>
+}
+
+templ EntityRow(it search.Item) {
+	<article class="row">
+		<div class="row-top">
+			<h3>{ it.Title }</h3>
+			if it.Move != nil {
+				<span class={ badgeClass(it.Move.Type) }>{ it.Move.Type }</span>
+				<span class="meta">{ moveMeta(*it.Move) }</span>
+			}
+		</div>
+		if it.Summary != "" {
+			<p class="summary">{ it.Summary }</p>
+		}
+		if len(it.Reasons) > 0 {
+			<div class="why">
+				for _, r := range it.Reasons {
+					<span>{ r }</span>
+				}
+			</div>
+		}
+	</article>
+}
+
+templ Tray() {
+	<div class="tray" id="tray">
+		<div class="wrap">
+			<p id="tray-text" aria-live="polite">Tick two or three Pokémon to compare them</p>
+			<form id="compare-form" action="/compare" method="get">
+				<button class="btn" id="tray-go" type="submit">Compare</button>
+			</form>
+		</div>
+	</div>
+}
+
+func hasPokemon(r search.Response) bool {
+	for _, g := range r.Groups {
+		if g.Kind == store.KindPokemon && len(g.Items) > 0 {
+			return true
+		}
+	}
+	return false
+}
