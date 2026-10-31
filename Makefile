@@ -5,7 +5,7 @@ DB_URL := postgres://pokedex:pokedex@localhost:$(DB_PORT)/pokedex?sslmode=disabl
 export APP_DATABASE_URL ?= $(DB_URL)
 export DB_PORT
 
-.PHONY: build run test test-integration lint generate tidy migrate-up migrate-down import docker-up docker-down
+.PHONY: build run test test-integration lint generate eval tidy migrate-up migrate-down import docker-up docker-down
 
 build:
 	go build -o $(BIN) ./cmd/pokedex
@@ -23,6 +23,11 @@ test-integration:
 
 generate:
 	templ generate ./internal/web/views
+
+# Prints the golden-query report (needs the compose db, like test-integration).
+eval:
+	docker compose up -d --wait db
+	APP_TEST_DATABASE_URL=$(DB_URL) go test -count=1 -run 'TestGolden$$' -v ./internal/golden | grep -v ' INFO '
 
 lint:
 	go vet ./...
