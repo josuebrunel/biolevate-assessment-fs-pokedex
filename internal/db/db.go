@@ -49,25 +49,27 @@ func Migrate(ctx context.Context, conn *sql.DB, action MigrateAction) error {
 		if err != nil {
 			return fmt.Errorf("migrate up: %w", err)
 		}
-		for _, r := range results {
-			slog.Info("migration applied", "source", r.Source.Path, "duration", r.Duration)
-		}
+		logMigrations("migration applied", results...)
 	case MigrateDown:
 		r, err := provider.Down(ctx)
 		if err != nil {
 			return fmt.Errorf("migrate down: %w", err)
 		}
-		slog.Info("migration rolled back", "source", r.Source.Path, "duration", r.Duration)
+		logMigrations("migration rolled back", r)
 	case MigrateRevert:
 		results, err := provider.DownTo(ctx, 0)
 		if err != nil {
 			return fmt.Errorf("migrate revert: %w", err)
 		}
-		for _, r := range results {
-			slog.Info("migration rolled back", "source", r.Source.Path, "duration", r.Duration)
-		}
+		logMigrations("migration rolled back", results...)
 	default:
 		return fmt.Errorf("unknown migrate action %q (want up, down or revert)", action)
 	}
 	return nil
+}
+
+func logMigrations(msg string, results ...*goose.MigrationResult) {
+	for _, r := range results {
+		slog.Info(msg, "source", r.Source.Path, "duration", r.Duration)
+	}
 }

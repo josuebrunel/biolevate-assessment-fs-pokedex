@@ -32,6 +32,20 @@ type candidate struct {
 	reason string
 }
 
+// candidatesOf maps source rows to candidates.
+func candidatesOf[T any](items []T, toCandidate func(T) candidate) []candidate {
+	out := make([]candidate, len(items))
+	for i, it := range items {
+		out[i] = toCandidate(it)
+	}
+	return out
+}
+
+// nonEmpty drops lists without candidates.
+func nonEmpty(lists ...ranked) []ranked {
+	return slices.DeleteFunc(slices.Clone(lists), func(l ranked) bool { return len(l.items) == 0 })
+}
+
 type entityKey struct {
 	kind store.Kind
 	id   int

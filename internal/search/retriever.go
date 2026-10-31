@@ -167,13 +167,7 @@ func (l *Lexical) nameLists(ctx context.Context, q Query, kinds []store.Kind, fe
 			fuzzy.items = append(fuzzy.items, s.candidate)
 		}
 	}
-	var out []ranked
-	for _, list := range []ranked{strong, fuzzy} {
-		if len(list.items) > 0 {
-			out = append(out, list)
-		}
-	}
-	return out, nil
+	return nonEmpty(strong, fuzzy), nil
 }
 
 // textLists runs full-text search per kind. Kinds stay separate lists so each
@@ -195,15 +189,11 @@ func (l *Lexical) textLists(ctx context.Context, q Query, kinds []store.Kind, fe
 		if err != nil {
 			return nil, err
 		}
-		list := ranked{weight: weightText}
-		for _, h := range hits {
-			list.items = append(list.items, candidate{kind, h.ID, h.Name, reason})
-		}
-		if len(list.items) > 0 {
-			lists = append(lists, list)
-		}
+		lists = append(lists, ranked{weightText, candidatesOf(hits, func(h store.Hit) candidate {
+			return candidate{kind, h.ID, h.Name, reason}
+		})})
 	}
-	return lists, nil
+	return nonEmpty(lists...), nil
 }
 
 // criteriaLists applies type filters and stat sorts. Type-only queries rank by
@@ -225,20 +215,16 @@ func (l *Lexical) criteriaLists(ctx context.Context, q Query, kinds []store.Kind
 		if err != nil {
 			return nil, err
 		}
-		list := ranked{weight: weightCriteria}
-		for _, p := range pokemon {
-			reasons := []string{}
+		lists = append(lists, ranked{weightCriteria, candidatesOf(pokemon, func(p store.Pokemon) candidate {
+			reasons := make([]string, 0, len(q.Types)+1)
 			for _, t := range q.Types {
 				reasons = append(reasons, "type: "+t)
 			}
 			if q.Sort != "" {
 				reasons = append(reasons, fmt.Sprintf("%s: %d", q.Sort, statValue(p.Stats, q.Sort)))
 			}
-			list.items = append(list.items, candidate{store.KindPokemon, p.ID, p.Name, strings.Join(reasons, ", ")})
-		}
-		if len(list.items) > 0 {
-			lists = append(lists, list)
-		}
+			return candidate{store.KindPokemon, p.ID, p.Name, strings.Join(reasons, ", ")}
+		})})
 	}
 
 	// Type filters on moves apply only when moves were asked for explicitly.
@@ -247,15 +233,11 @@ func (l *Lexical) criteriaLists(ctx context.Context, q Query, kinds []store.Kind
 		if err != nil {
 			return nil, err
 		}
-		list := ranked{weight: weightCriteria}
-		for _, m := range moves {
-			list.items = append(list.items, candidate{store.KindMove, m.ID, m.Name, "type: " + m.Type})
-		}
-		if len(list.items) > 0 {
-			lists = append(lists, list)
-		}
+		lists = append(lists, ranked{weightCriteria, candidatesOf(moves, func(m store.Move) candidate {
+			return candidate{store.KindMove, m.ID, m.Name, "type: " + m.Type}
+		})})
 	}
-	return lists, nil
+	return nonEmpty(lists...), nil
 }
 
 func longEnough(terms []string) []string {
