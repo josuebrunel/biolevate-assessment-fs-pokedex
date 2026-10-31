@@ -12,6 +12,8 @@ func TestConceptMapExpand(t *testing.T) {
 		{Key: "sleep", Label: "Sleep", Aliases: []string{"sleep", "asleep", "drowsy"}, Terms: []string{"sleep", "puts the target to sleep"}},
 		{Key: "healing", Label: "Healing", Aliases: []string{"heal", "rest"}, Terms: []string{"heal", "sleep"}},
 		{Key: "poison", Label: "Poison", Aliases: []string{"poison"}, Terms: []string{"poison"}},
+		{Key: "rain", Label: "Rain", Aliases: []string{"rain", "drizzle"}, Terms: []string{"rain"}, Types: []string{"water"}},
+		{Key: "storm", Label: "Storm", Aliases: []string{"drizzle"}, Terms: []string{"storm"}, Types: []string{"water", "electric"}},
 	})
 
 	tests := []struct {
@@ -29,6 +31,8 @@ func TestConceptMapExpand(t *testing.T) {
 			Expansion{Terms: []string{"heal", "sleep", "puts the target to sleep"}, Concepts: []string{"Healing", "Sleep"}}},
 		{"unrelated tokens are ignored among aliases", []string{"fast", "poison"},
 			Expansion{Terms: []string{"poison"}, Concepts: []string{"Poison"}}},
+		{"types are collected without duplicates", []string{"drizzle"},
+			Expansion{Terms: []string{"rain", "storm"}, Concepts: []string{"Rain", "Storm"}, Types: []string{"water", "electric"}}},
 		{"matching is on exact lowercase tokens", []string{"Asleep"}, Expansion{}},
 	}
 	for _, tt := range tests {

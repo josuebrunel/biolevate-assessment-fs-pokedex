@@ -163,6 +163,20 @@ func TestStore(t *testing.T) {
 		}
 	})
 
+	t.Run("ConceptList types", func(t *testing.T) {
+		concepts, err := s.ConceptList(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		types := map[string][]string{}
+		for _, c := range concepts {
+			types[c.Key] = c.Types
+		}
+		if !slices.Equal(types["rain"], []string{"water"}) || !slices.Equal(types["sandstorm"], []string{"ground", "rock"}) || len(types["sleep"]) != 0 {
+			t.Errorf("types = %v", types)
+		}
+	})
+
 	t.Run("PokemonList", func(t *testing.T) {
 		fastest, err := s.PokemonList(ctx, store.PokemonListParams{Types: []string{"electric"}, SortBy: store.StatSpeed, Limit: 5})
 		if err != nil {

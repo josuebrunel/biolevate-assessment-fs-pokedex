@@ -20,6 +20,8 @@ type Concept struct {
 	Label   string   `json:"label"`
 	Aliases []string `json:"aliases"`
 	Terms   []string `json:"terms"`
+	// Types are the Pokémon types the condition favours (rain: water); optional.
+	Types []string `json:"types,omitempty"`
 }
 
 var conceptKey = regexp.MustCompile(`^[a-z]+(-[a-z]+)*$`)
@@ -63,6 +65,11 @@ func validateConcepts(concepts []Concept) error {
 		}
 		if err := validateWords(c.Key, "term", "terms", c.Terms, false); err != nil {
 			return err
+		}
+		if len(c.Types) > 0 {
+			if err := validateWords(c.Key, "type", "types", c.Types, true); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

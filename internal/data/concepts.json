@@ -64,25 +64,29 @@
       "key": "rain",
       "label": "Rain",
       "aliases": ["rain", "rainy", "drizzle", "downpour", "monsoon"],
-      "terms": ["rain"]
+      "terms": ["rain"],
+      "types": ["water"]
     },
     {
       "key": "sun",
       "label": "Harsh sunlight",
       "aliases": ["sun", "sunny", "sunlight", "drought"],
-      "terms": ["sunlight", "sunny"]
+      "terms": ["sunlight", "sunny"],
+      "types": ["fire"]
     },
     {
       "key": "sandstorm",
       "label": "Sandstorm",
       "aliases": ["sandstorm", "sand", "sandy"],
-      "terms": ["sandstorm"]
+      "terms": ["sandstorm"],
+      "types": ["rock", "ground"]
     },
     {
       "key": "hail",
       "label": "Hail",
       "aliases": ["hail", "hailstorm", "snow", "snowy"],
-      "terms": ["hail"]
+      "terms": ["hail"],
+      "types": ["ice"]
     }
   ]
 }

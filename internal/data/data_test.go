@@ -1,6 +1,7 @@
 package data
 
 import (
+	"slices"
 	"strings"
 	"testing"
 )
@@ -76,6 +77,11 @@ func TestEmbeddedConcepts(t *testing.T) {
 			t.Errorf("concept %q missing", want)
 		}
 	}
+	for _, c := range ds.Concepts {
+		if c.Key == "rain" && !slices.Equal(c.Types, []string{"water"}) {
+			t.Errorf("rain types = %v, want [water]", c.Types)
+		}
+	}
 }
 
 func TestParseConceptsValidation(t *testing.T) {
@@ -94,6 +100,9 @@ func TestParseConceptsValidation(t *testing.T) {
 		{"multi-word alias", `{"concepts":[{"key":"a","label":"A","aliases":["fall asleep"],"terms":["t"]}]}`, "single word"},
 		{"duplicate alias", `{"concepts":[{"key":"a","label":"A","aliases":["x","x"],"terms":["t"]}]}`, "duplicate alias"},
 		{"untrimmed term", `{"concepts":[{"key":"a","label":"A","aliases":["x"],"terms":[" t"]}]}`, "untrimmed"},
+		{"types are validated", `{"concepts":[{"key":"a","label":"A","aliases":["x"],"terms":["t"],"types":["Water"]}]}`, "lowercase"},
+		{"duplicate type", `{"concepts":[{"key":"a","label":"A","aliases":["x"],"terms":["t"],"types":["water","water"]}]}`, "duplicate type"},
+		{"types are optional and accepted", `{"concepts":[{"key":"a","label":"A","aliases":["x"],"terms":["t"],"types":["water"]}]}`, ""},
 		{"unknown field", `{"concepts":[{"key":"a","label":"A","aliases":["x"],"terms":["t"],"typo":1}]}`, "decode concepts"},
 		{"malformed", `{`, "decode concepts"},
 	}

@@ -12,6 +12,7 @@ import (
 type Expansion struct {
 	Terms    []string
 	Concepts []string
+	Types    []string // types the matched concepts favour, for strategy queries
 }
 
 // ConceptReader loads the concept set; satisfied by *store.Store.
@@ -56,15 +57,20 @@ func (m *ConceptMap) Expand(tokens []string) Expansion {
 	var ex Expansion
 	for _, tok := range tokens {
 		for _, c := range m.byAlias[tok] {
-			if !slices.Contains(ex.Concepts, c.Label) {
-				ex.Concepts = append(ex.Concepts, c.Label)
-			}
-			for _, t := range c.Terms {
-				if !slices.Contains(ex.Terms, t) {
-					ex.Terms = append(ex.Terms, t)
-				}
-			}
+			ex.Concepts = appendMissing(ex.Concepts, c.Label)
+			ex.Terms = appendMissing(ex.Terms, c.Terms...)
+			ex.Types = appendMissing(ex.Types, c.Types...)
 		}
 	}
 	return ex
+}
+
+// appendMissing appends the values not already in dst, keeping order.
+func appendMissing(dst []string, values ...string) []string {
+	for _, v := range values {
+		if !slices.Contains(dst, v) {
+			dst = append(dst, v)
+		}
+	}
+	return dst
 }
