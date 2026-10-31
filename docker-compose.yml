@@ -34,14 +34,23 @@ services:
         condition: service_completed_successfully
 
   app:
-    build: .
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION:-dev}
     environment:
       APP_DATABASE_URL: postgres://pokedex:pokedex@db:5432/pokedex?sslmode=disable
     ports:
-      - "8080:8080"
+      - "${APP_PORT:-8080}:8080"
     depends_on:
       import:
         condition: service_completed_successfully
+    restart: unless-stopped
+    # The service only needs to listen and talk to the database.
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
 
 volumes:
   pgdata:

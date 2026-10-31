@@ -1,3 +1,10 @@
 .git
-bin
+.github
 .env
+bin
+candidate-resources
+*.md
+Makefile
+docker-compose.yml
+Dockerfile
+mine.txt
