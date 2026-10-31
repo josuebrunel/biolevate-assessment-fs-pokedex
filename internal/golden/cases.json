@@ -1,0 +1,996 @@
+[
+ {
+  "name": "partial name",
+  "category": "names and typos",
+  "query": "bulba",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "bulbasaur",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "typo: missing letter",
+  "category": "names and typos",
+  "query": "pikchu",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "pikachu",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "typo: swapped letters",
+  "category": "names and typos",
+  "query": "charzard",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "charizard",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "typo: swapped letters 2",
+  "category": "names and typos",
+  "query": "gyrados",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "gyarados",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "typo: missing letter 2",
+  "category": "names and typos",
+  "query": "squirtel",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "squirtle",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "typo: missing letter 3",
+  "category": "names and typos",
+  "query": "jigglypuf",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "jigglypuff",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "typo: missing letter 4",
+  "category": "names and typos",
+  "query": "alakazm",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "alakazam",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "typo: plural",
+  "category": "names and typos",
+  "query": "ninetails",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "ninetales",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "typo: truncated",
+  "category": "names and typos",
+  "query": "mewtu",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "mewtwo",
+    "within": 1
+   },
+   {
+    "kind": "pokemon",
+    "name": "mew",
+    "within": 3
+   }
+  ]
+ },
+ {
+  "name": "prefix lists the family",
+  "category": "names and typos",
+  "query": "char",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "charmander",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "charmeleon",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "charizard",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "shared prefix",
+  "category": "names and typos",
+  "query": "nidoran",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "nidoran-f",
+    "within": 3
+   },
+   {
+    "kind": "pokemon",
+    "name": "nidoran-m",
+    "within": 3
+   }
+  ]
+ },
+ {
+  "name": "name with a space",
+  "category": "names and typos",
+  "query": "mr mime",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "mr-mime",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "name with punctuation",
+  "category": "names and typos",
+  "query": "mr. mime",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "mr-mime",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "exact name",
+  "category": "names and typos",
+  "query": "gengar",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "gengar",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "very short fragment",
+  "category": "names and typos",
+  "query": "chu",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "pikachu",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "raichu",
+    "within": 5
+   }
+  ],
+  "known": "fragments under three characters are not searched, to avoid matching everything"
+ },
+ {
+  "name": "fast electric",
+  "category": "criteria and comparison",
+  "query": "fast electric",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "electrode",
+    "within": 1
+   },
+   {
+    "kind": "pokemon",
+    "name": "jolteon",
+    "within": 2
+   },
+   {
+    "kind": "pokemon",
+    "name": "raichu",
+    "within": 3
+   }
+  ]
+ },
+ {
+  "name": "strongest fire",
+  "category": "criteria and comparison",
+  "query": "strongest fire",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "flareon",
+    "within": 1
+   },
+   {
+    "kind": "pokemon",
+    "name": "arcanine",
+    "within": 3
+   }
+  ]
+ },
+ {
+  "name": "bulky water",
+  "category": "criteria and comparison",
+  "query": "bulky water",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "lapras",
+    "within": 1
+   },
+   {
+    "kind": "pokemon",
+    "name": "vaporeon",
+    "within": 3
+   }
+  ]
+ },
+ {
+  "name": "slow psychic",
+  "category": "criteria and comparison",
+  "query": "slow psychic",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "slowpoke",
+    "within": 1
+   },
+   {
+    "kind": "pokemon",
+    "name": "slowbro",
+    "within": 2
+   }
+  ]
+ },
+ {
+  "name": "fast flying",
+  "category": "criteria and comparison",
+  "query": "fast flying",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "aerodactyl",
+    "within": 1
+   },
+   {
+    "kind": "pokemon",
+    "name": "dodrio",
+    "within": 2
+   }
+  ]
+ },
+ {
+  "name": "top N",
+  "category": "criteria and comparison",
+  "query": "top 3 fastest",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "electrode",
+    "within": 1
+   },
+   {
+    "kind": "pokemon",
+    "name": "jolteon",
+    "within": 2
+   },
+   {
+    "kind": "pokemon",
+    "name": "aerodactyl",
+    "within": 3
+   }
+  ]
+ },
+ {
+  "name": "stat only",
+  "category": "criteria and comparison",
+  "query": "strongest",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "dragonite",
+    "within": 1
+   },
+   {
+    "kind": "pokemon",
+    "name": "machamp",
+    "within": 2
+   }
+  ]
+ },
+ {
+  "name": "lowest stat",
+  "category": "criteria and comparison",
+  "query": "slowest",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "slowpoke",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "type only",
+  "category": "criteria and comparison",
+  "query": "dragon",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "dragonite",
+    "within": 3
+   },
+   {
+    "kind": "pokemon",
+    "name": "dragonair",
+    "within": 3
+   },
+   {
+    "kind": "pokemon",
+    "name": "dratini",
+    "within": 3
+   }
+  ]
+ },
+ {
+  "name": "type of moves",
+  "category": "criteria and comparison",
+  "query": "electric moves",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "thunderbolt",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "thunder",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "impossible type pair",
+  "category": "criteria and comparison",
+  "query": "flying ghost",
+  "expect_empty": true
+ },
+ {
+  "name": "weight superlative",
+  "category": "criteria and comparison",
+  "query": "heaviest",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "snorlax",
+    "within": 1
+   }
+  ],
+  "known": "weight and height are not sortable criteria in the query parser"
+ },
+ {
+  "name": "sleep in plain words",
+  "category": "vocabulary-free discovery",
+  "query": "put opponent to sleep",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "sleep-powder",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "hypnosis",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "lovely-kiss",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "sing",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "spore",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "drowzee",
+    "within": 5
+   },
+   {
+    "kind": "abilities",
+    "name": "insomnia",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "sleep, another phrasing",
+  "category": "vocabulary-free discovery",
+  "query": "make the enemy fall asleep",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "hypnosis",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "spore",
+    "within": 6
+   },
+   {
+    "kind": "pokemon",
+    "name": "drowzee",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "sleep, one loose word",
+  "category": "vocabulary-free discovery",
+  "query": "sleepy",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "sleep-powder",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "hypnosis",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "paralysis",
+  "category": "vocabulary-free discovery",
+  "query": "paralyze",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "glare",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "stun-spore",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "thunder-wave",
+    "within": 5
+   },
+   {
+    "kind": "abilities",
+    "name": "static",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "poison by status",
+  "category": "vocabulary-free discovery",
+  "query": "toxic",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "toxic",
+    "within": 1
+   },
+   {
+    "kind": "moves",
+    "name": "poison-powder",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "poison-sting",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "burn",
+  "category": "vocabulary-free discovery",
+  "query": "burn",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "ember",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "flamethrower",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "fire-blast",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "freeze",
+  "category": "vocabulary-free discovery",
+  "query": "freeze",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "blizzard",
+    "within": 3
+   },
+   {
+    "kind": "moves",
+    "name": "ice-beam",
+    "within": 3
+   }
+  ]
+ },
+ {
+  "name": "confusion",
+  "category": "vocabulary-free discovery",
+  "query": "confuse",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "confuse-ray",
+    "within": 3
+   },
+   {
+    "kind": "moves",
+    "name": "supersonic",
+    "within": 8
+   }
+  ]
+ },
+ {
+  "name": "healing",
+  "category": "vocabulary-free discovery",
+  "query": "heal myself",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "recover",
+    "within": 8
+   },
+   {
+    "kind": "moves",
+    "name": "soft-boiled",
+    "within": 8
+   }
+  ]
+ },
+ {
+  "name": "accuracy drop",
+  "category": "vocabulary-free discovery",
+  "query": "lower accuracy",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "sand-attack",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "smokescreen",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "poison with a type word",
+  "category": "vocabulary-free discovery",
+  "query": "poison the enemy",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "poison-powder",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "poison-sting",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "toxic",
+    "within": 5
+   }
+  ],
+  "known": "the word poison is read as a type filter, so moves that cause poison are crowded out"
+ },
+ {
+  "name": "stat boost",
+  "category": "vocabulary-free discovery",
+  "query": "raise defense",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "harden",
+    "within": 8
+   },
+   {
+    "kind": "moves",
+    "name": "withdraw",
+    "within": 8
+   },
+   {
+    "kind": "moves",
+    "name": "barrier",
+    "within": 8
+   },
+   {
+    "kind": "moves",
+    "name": "acid-armor",
+    "within": 8
+   }
+  ],
+  "known": "raise defense is read as a sort by defense, and effect text is not searched for it"
+ },
+ {
+  "name": "one-hit KO",
+  "category": "vocabulary-free discovery",
+  "query": "one hit knock out",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "fissure",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "guillotine",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "horn-drill",
+    "within": 5
+   }
+  ],
+  "known": "no concept for one-hit KO; stems of the words match multi-hit moves instead"
+ },
+ {
+  "name": "abbreviation",
+  "category": "vocabulary-free discovery",
+  "query": "ohko",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "fissure",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "guillotine",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "horn-drill",
+    "within": 5
+   }
+  ],
+  "known": "no alias for the abbreviation"
+ },
+ {
+  "name": "who learns a move",
+  "category": "vocabulary-free discovery",
+  "query": "which pokemon can learn thunder",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "pikachu",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "raichu",
+    "within": 5
+   }
+  ],
+  "known": "a move named in a question is not followed back to the Pokémon that learn it"
+ },
+ {
+  "name": "who has an ability",
+  "category": "vocabulary-free discovery",
+  "query": "pokemon with levitate",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "gastly",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "koffing",
+    "within": 5
+   }
+  ],
+  "known": "an ability named in a question is not followed back to the Pokémon that have it"
+ },
+ {
+  "name": "category word",
+  "category": "vocabulary-free discovery",
+  "query": "legendary",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "articuno",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "zapdos",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "moltres",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "mewtwo",
+    "within": 5
+   }
+  ],
+  "known": "legendary status is stored but not searchable"
+ },
+ {
+  "name": "role word",
+  "category": "vocabulary-free discovery",
+  "query": "fire starter",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "charmander",
+    "within": 8
+   }
+  ],
+  "known": "starter is not a concept; the query is read as the fire type only"
+ },
+ {
+  "name": "rain: abilities",
+  "category": "strategy bundles",
+  "query": "rain team",
+  "expect": [
+   {
+    "kind": "abilities",
+    "name": "rain-dish",
+    "within": 5
+   },
+   {
+    "kind": "abilities",
+    "name": "swift-swim",
+    "within": 5
+   },
+   {
+    "kind": "abilities",
+    "name": "hydration",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "rain: beneficiaries",
+  "category": "strategy bundles",
+  "query": "rain team",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "blastoise",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "lapras",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "rain: moves",
+  "category": "strategy bundles",
+  "query": "rain team",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "thunder",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "sun: abilities",
+  "category": "strategy bundles",
+  "query": "sun team",
+  "expect": [
+   {
+    "kind": "abilities",
+    "name": "chlorophyll",
+    "within": 8
+   },
+   {
+    "kind": "abilities",
+    "name": "solar-power",
+    "within": 8
+   },
+   {
+    "kind": "abilities",
+    "name": "leaf-guard",
+    "within": 8
+   }
+  ]
+ },
+ {
+  "name": "sun: moves and Pokémon",
+  "category": "strategy bundles",
+  "query": "sun team",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "solar-beam",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "venusaur",
+    "within": 3
+   }
+  ]
+ },
+ {
+  "name": "paralysis strategy",
+  "category": "strategy bundles",
+  "query": "paralysis team",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "thunder-wave",
+    "within": 5
+   },
+   {
+    "kind": "abilities",
+    "name": "static",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "pikachu",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "sleep strategy",
+  "category": "strategy bundles",
+  "query": "sleep strategy",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "spore",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "hypnosis",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "drowzee",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "rain keeps unrelated types out of the top",
+  "category": "strategy bundles",
+  "query": "rain team",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "lapras",
+    "within": 5
+   }
+  ],
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "charmander",
+    "within": 3
+   }
+  ]
+ },
+ {
+  "name": "gibberish",
+  "category": "negatives and hostile input",
+  "query": "zzzqqq",
+  "expect_empty": true
+ },
+ {
+  "name": "empty",
+  "category": "negatives and hostile input",
+  "query": "",
+  "expect_empty": true
+ },
+ {
+  "name": "blank",
+  "category": "negatives and hostile input",
+  "query": "   ",
+  "expect_empty": true
+ },
+ {
+  "name": "SQL injection stays data",
+  "category": "negatives and hostile input",
+  "query": "'; drop table pokemon;--",
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "bulbasaur",
+    "within": 0
+   }
+  ]
+ },
+ {
+  "name": "tsquery syntax stays data",
+  "category": "negatives and hostile input",
+  "query": "!!! & | ( ) :* <->",
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "bulbasaur",
+    "within": 0
+   }
+  ]
+ }
+]
