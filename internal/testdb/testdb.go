@@ -28,7 +28,7 @@ func Empty(t *testing.T) *sql.DB {
 	}
 	ctx := context.Background()
 
-	admin, err := db.Open(ctx, adminURL)
+	admin, err := db.Open(ctx, adminURL, db.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func Empty(t *testing.T) *sql.DB {
 		t.Fatal(err)
 	}
 	u.Path = "/" + name
-	conn, err := db.Open(ctx, u.String())
+	conn, err := db.Open(ctx, u.String(), db.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}

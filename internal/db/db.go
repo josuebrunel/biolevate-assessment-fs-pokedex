@@ -6,19 +6,41 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"strconv"
+	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" database/sql driver
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/migrations"
 )
 
+// Options tune the connection pool and the server-side statement timeout.
+// Zero values leave the driver defaults, which is what one-shot commands
+// such as migrate and import want.
+type Options struct {
+	MaxOpenConns     int
+	MaxIdleConns     int
+	ConnMaxLifetime  time.Duration
+	StatementTimeout time.Duration // Postgres cancels any statement running longer
+}
+
 // Open connects to Postgres and verifies the connection.
-func Open(ctx context.Context, url string) (*sql.DB, error) {
-	conn, err := sql.Open("pgx", url)
+func Open(ctx context.Context, url string, opts Options) (*sql.DB, error) {
+	cfg, err := pgx.ParseConfig(url)
 	if err != nil {
-		return nil, fmt.Errorf("open database: %w", err)
+		return nil, fmt.Errorf("parse database url: %w", err)
 	}
+	if opts.StatementTimeout > 0 {
+		cfg.RuntimeParams["statement_timeout"] = strconv.FormatInt(opts.StatementTimeout.Milliseconds(), 10)
+	}
+	conn := stdlib.OpenDB(*cfg)
+	if opts.MaxOpenConns > 0 {
+		conn.SetMaxOpenConns(opts.MaxOpenConns)
+		conn.SetMaxIdleConns(opts.MaxIdleConns)
+	}
+	conn.SetConnMaxLifetime(opts.ConnMaxLifetime)
 	if err := conn.PingContext(ctx); err != nil {
 		_ = conn.Close()
 		return nil, fmt.Errorf("ping database: %w", err)

@@ -2,7 +2,10 @@ package db_test
 
 import (
 	"context"
+	"os"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/db"
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/testdb"
@@ -68,5 +71,29 @@ func TestMigrate(t *testing.T) {
 
 	if err := db.Migrate(ctx, conn, "sideways"); err == nil {
 		t.Error("expected an error for an unknown action")
+	}
+}
+
+func TestOpenAppliesPoolAndStatementTimeout(t *testing.T) {
+	url := os.Getenv("APP_TEST_DATABASE_URL")
+	if url == "" {
+		t.Skip("APP_TEST_DATABASE_URL not set")
+	}
+	conn, err := db.Open(context.Background(), url, db.Options{MaxOpenConns: 3, MaxIdleConns: 1, StatementTimeout: 200 * time.Millisecond})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = conn.Close() }()
+
+	if got := conn.Stats().MaxOpenConnections; got != 3 {
+		t.Errorf("max open = %d, want 3", got)
+	}
+	start := time.Now()
+	_, err = conn.ExecContext(context.Background(), "SELECT pg_sleep(5)")
+	if err == nil || !strings.Contains(err.Error(), "statement timeout") {
+		t.Fatalf("err = %v, want a statement timeout", err)
+	}
+	if time.Since(start) > 2*time.Second {
+		t.Errorf("query ran %v, the timeout did not cut it short", time.Since(start))
 	}
 }
