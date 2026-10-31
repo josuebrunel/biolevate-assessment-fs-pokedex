@@ -154,7 +154,7 @@ What was delivered:
 
 - **The app:** server-rendered web UI, live search, shareable result URLs, compare view.
 - **The engine:** rule-based query parser, lexical retrieval with typo tolerance, a concept map for vocabulary, graph expansion from moves and abilities to Pokémon, and an explanation for every result.
-- **The proof:** unit and integration tests on real Postgres, a 58-query golden suite that reports recall and ranking, a query-plan guard that fails any query that cannot use an index, and a CI smoke test of the real container.
+- **The proof:** unit and integration tests on real Postgres, a 71-query golden suite that reports recall and ranking, a query-plan guard that fails any query that cannot use an index, and a CI smoke test of the real container.
 - **The operations:** structured logs with request IDs, health and readiness probes, request and statement timeouts, rate limiting, a small hardened image.
 - **The write-up:** this README (choices, limits, next steps, AI disclosure).
 
@@ -193,24 +193,27 @@ skips the tests that need Postgres.
 
 **You can**
 
-- Search by **name**, partial name or typo (`bulba`, `pikchu`, `mr mime`, `nidoran`).
-- Search by **criteria**: a type plus a stat word (`fast electric`, `bulky water`, `strongest fire`, `top 3 fastest`).
-- Search by **effect or intent** in plain words (`put opponent to sleep`, `paralyze`, `heal myself`, `burn`).
+- Search by **name**, partial name, fragment or typo (`bulba`, `pikchu`, `chu`, `mr mime`, `nidoran`).
+- Search by **criteria**: a type plus a stat or size word (`fast electric`, `bulky water`, `strongest fire`, `top 3 fastest`, `heaviest`, `tallest water`), or `legendary` (`legendary fire`).
+- Search by **effect or intent** in plain words (`put opponent to sleep`, `paralyze`, `heal myself`, `burn`, `raise defense`, `one hit knock out`).
+- Ask who **has a move or ability** (`pokemon with levitate`, `which pokemon can learn thunder`).
+- Ask for a **group** (`starter`, `water starter`, `fossil pokemon`, `eeveelution`).
 - Ask a **strategy** question (`rain team`, `sun team`, `paralysis team`) and get a bundle across categories.
 - **Compare** up to three Pokémon in a link you can share.
 - See **why** each result matched, and how your query was read.
 
-**You cannot (yet)**. These are known, measured, and listed with their reasons.
+**You cannot (yet)**
 
-| Query | Why it misses |
-|---|---|
-| `pokemon with levitate`, `which pokemon can learn thunder` | A move or ability named inside a question is not followed back to the Pokémon that have it. |
-| `legendary` | Stored in the data, but not searchable. |
-| `heaviest`, `tallest` | Weight and height are not sortable criteria. |
-| `raise defense`, `poison the enemy` | Read as a sort or a type filter, so the effect text is not searched for it. |
-| `one hit knock out`, `ohko` | No concept or alias for it. |
-| `fire starter` | "Starter" is not a concept. |
-| `chu` | Fragments under three characters are not searched. |
+| Ask | What happens | Why |
+|---|---|---|
+| `weak against water`, `how to beat gyarados` | A list that ignores the intent. | The dataset has no type-effectiveness table, so the engine cannot answer matchup questions. It shows what it finds rather than refusing. |
+| `evolution of charmander` | Charmander and unrelated results. | Evolution chains are not in the data. |
+| `move that hits all enemies`, `swap places` | Loosely related moves. | Paraphrases outside the concept map fall back to word matching. This is the case embeddings could help, and it is why they are listed under next steps. |
+| `starter` | Base forms only (Bulbasaur, Charmander, Squirtle). | A collection is a fixed list of names, not inferred. |
+
+Ten queries that used to miss (ability and move lookups, `legendary`, `heaviest`,
+`raise defense`, `ohko`, `fire starter`, `chu` and others) are now fixed and are
+part of the golden suite.
 
 Data caveats, from the dataset itself: abilities are current PokéAPI
 associations, not Generation 1 (which had none), so some results use modern
@@ -256,7 +259,7 @@ index. Both are enforced by tests. Details are in the [design notes](#design-not
 **Left out on purpose**
 
 - **Redis or any cache:** the data is static and small, and indexed Postgres answers in milliseconds. A cache adds a service and an invalidation problem for nothing measurable.
-- **Embeddings, for now:** the golden suite shows most misses are structural or vocabulary gaps that a rule fixes exactly and explainably. Vectors are kept as a measured option, judged on the golden suite (see next steps).
+- **Embeddings, for now:** the golden-suite misses turned out to be structural or vocabulary gaps that a rule fixed exactly and explainably, so vectors did not pay for themselves. They are kept as a measured option, judged on the golden suite (see next steps).
 - **A graph extension such as Apache AGE:** the graph is one hop deep with about 4,300 edges, which a join handles. AGE would need its own Postgres image, Cypher instead of Bob, and weaker index checks. It would earn its place with evolution chains or type-effectiveness paths, which this dataset does not have.
 - **DaisyUI and a JS front end:** both need a build step or a CDN; the hand-made 13 KB stylesheet keeps the app offline and dependency-free.
 
@@ -264,7 +267,7 @@ index. Both are enforced by tests. Details are in the [design notes](#design-not
 
 | Check | What it proves |
 |---|---|
-| **Golden suite** (58 queries) | Every core query returns the expected results within the expected rank. Reports recall and mean reciprocal rank per category. Misses are recorded as known limits and must stay failing until fixed. |
+| **Golden suite** (71 queries) | Every query returns the expected results within the expected rank. Reports recall and mean reciprocal rank per category. A known miss can be recorded with its reason and must stay failing until fixed. It is written by the engine's author, so it guards regressions and measures changes; it is not an independent benchmark. |
 | **Index guard** | Every query runs through a recorder that checks its plan; one that would scan a table fails the test. |
 | **Query-count test** | A search issues the same number of queries for 2 or 40 results per group (no N+1). |
 | **Real-Postgres tests** | Store, importer (idempotent, transactional), migrations and the web layer run against a throwaway database. |
@@ -282,11 +285,10 @@ index. Both are enforced by tests. Details are in the [design notes](#design-not
 
 ## Next steps
 
-1. **Fix the lexical misses** above. Most need a rule, an alias or a concept, and each one is already a test case.
-2. **Measure embeddings** (pgvector in the same database, a local model, silent fallback to lexical). Keep them only if they beat the golden suite by enough to justify an extra service.
-3. **Richer data** if allowed: evolution chains, type effectiveness, learn methods. This is where a graph extension would start to pay.
-4. **More languages** and spoken-form queries.
-5. **Distributed rate limiting and a cache** only if traffic ever justified them.
+1. **Measure embeddings** (pgvector in the same database, a local model, silent fallback to lexical). The paraphrase queries above are the test: add them to the golden suite, then keep embeddings only if they win by enough to justify an extra service.
+2. **Richer data** if allowed: evolution chains, type effectiveness, learn methods. This is what matchup and evolution questions need, and where a graph extension would start to pay.
+3. **More languages** and spoken-form queries.
+4. **Distributed rate limiting and a cache** only if traffic ever justified them.
 
 ## Design notes
 
@@ -367,6 +369,9 @@ so every interpretation is explainable and testable.
 | `put opponent to sleep` | term `sleep` (`put`, `opponent` are noise) |
 | `moves that cause paralysis` | only moves, term `paralysis` |
 | `rain team` | term `rain`, strategy question |
+| `heaviest`, `tallest water`, `lightest` | sorted by weight or height, optionally a type |
+| `legendary fire` | legendary or mythical Pokémon of the fire type |
+| `raise defense`, `lower speed` | an effect to search for (the stat word is a term here, not a sort) |
 | `pikachu vs raichu`, `compare mr mime and pikachu` | comparison of the two sides |
 
 The result is a set of hints, not filters. `poison` is both a type and a word in
@@ -401,7 +406,8 @@ speed: 150", "text mentions sleep") for the UI. Full-text results for different
 kinds stay separate lists, so exploratory queries return a mix of Pokémon,
 moves and abilities instead of whichever table scores highest.
 
-Known limits, addressed in the next steps:
+Notes on limits at the time this was written (most were addressed afterwards,
+see the fixes below):
 
 - Pure lexical search cannot bridge vocabulary: the English stemmer treats
   `paralysis` and `paralyze` as different words. The concept map (next section)
@@ -412,6 +418,28 @@ Known limits, addressed in the next steps:
   to be assembled from abilities (`swift-swim`, `rain-dish`, `dry-skin`,
   `hydration`), moves whose text mentions weather (`thunder`, `solar-beam`) and
   Water types.
+
+**Fixes driven by the golden suite.** Ten queries missed at first; each fix is a
+small rule, so it stays explainable.
+
+- **Fragments inside a name** (`chu` finds Pikachu and Raichu): a substring match
+  served by the same trigram index, ranked below prefixes and above typos.
+- **Per-kind result cap:** a long list of one kind (33 Poison-type Pokémon) used
+  to push every move out of the response for `poison the enemy`. Each kind now
+  gets its own cap, unless the user asked for "top N".
+- **Asking for Pokémon through a move or ability** (`pokemon with levitate`): the
+  engine retrieves across all kinds so the ability seeds the graph, then shows
+  only Pokémon.
+- **Effect phrasing** (`raise defense`): after an effect verb the stat word is a
+  search term, not a sort, and names are not searched, so `sky-attack` cannot
+  match "raise attack".
+- **Size and legendary criteria:** `heaviest`, `tallest`, `lightest`,
+  `legendary`, each backed by an index so the plan guard stays satisfied. Words
+  such as "light" and "short" are left out because they are also move names.
+- **Concepts can have several-word aliases** (`one hit knock out`) and can name a
+  **collection** of Pokémon (`starter`, `fossil`, `eeveelution`) that is
+  combined with the query's type and sort. A test fails if a collection names a
+  Pokémon that is not in the dataset.
 
 ### Concept map
 
@@ -425,7 +453,7 @@ links the two:
   "terms":   ["sleep", "puts the target to sleep"] }
 ```
 
-- **Aliases** are what users type, single lowercase words. **Terms** are what the
+- **Aliases** are what users type: lowercase words, or short phrases such as `one hit knock out`. **Terms** are what the
   data says; a term with spaces is searched as a **phrase**.
 - The seed lives in `internal/data/concepts.json` (versioned, embedded,
   validated), is imported with the dataset into `concepts`, `concept_aliases` and
@@ -541,7 +569,7 @@ JavaScript; HTMX only removes the full reload.
 
 ### Golden-query suite
 
-`internal/golden` scores the engine against 58 queries with known good answers
+`internal/golden` scores the engine against 71 queries with known good answers
 (`cases.json`), through the real engine and Postgres. Cases cover the four
 challenges plus typos, hostile input and empty queries, in five categories.
 
@@ -553,21 +581,22 @@ scored on the same cases and compared.
 
 ```
 category                     cases  passed  recall  MRR
-criteria and comparison      11     11      1.00    0.70
-names and typos              14     14      1.00    0.88
+criteria and comparison      16     16      1.00    0.74
+names and typos              16     16      1.00    0.83
 negatives and hostile input  5      5       -       -
 strategy bundles             8      8       1.00    0.55
-vocabulary-free discovery    10     10      1.00    0.53
-core total                   48     48      1.00    0.65
-all (incl. known limits)     58     48      0.81    0.52
+vocabulary-free discovery    26     26      1.00    0.52
+core total                   71     71      1.00    0.62
 ```
 
-Ten cases are **known limits**: queries the lexical engine misses today, each
-with the reason (for example "pokemon with levitate" does not follow the ability
-back to its Pokémon, "legendary" is stored but not searchable, "chu" is under
-the three-character minimum). They are written down instead of hidden. A known
+A case can carry a `known` flag with the reason the engine misses it. A known
 case must fail, so when one starts passing the suite fails until its flag is
-removed. Run `make eval` for the full report; the suite also runs in CI.
+removed. The suite started with ten of them; all ten were fixed (see the lexical
+fixes in the retriever notes) and none remain.
+
+Run `make eval` for the full report; the suite also runs in CI. The cases were
+written by the engine's author after looking at real output, so the suite is a
+regression guard and a way to measure changes, not an independent benchmark.
 
 ### Hardening and operations
 
@@ -685,5 +714,5 @@ Work is tracked in the [overview issue](https://github.com/josuebrunel/biolevate
 | [Golden-query suite](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/14) | done |
 | [Hardening: limits, pool, container, smoke test](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/15) | done |
 | [README write-up and AI disclosure](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/16) | done |
-| [Fix the known lexical misses](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/17) | next |
+| [Fix the known lexical misses](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/17) | done |
 | Optional embeddings | later, only if measured |
