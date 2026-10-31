@@ -5,7 +5,7 @@ DB_URL := postgres://pokedex:pokedex@localhost:$(DB_PORT)/pokedex?sslmode=disabl
 export APP_DATABASE_URL ?= $(DB_URL)
 export DB_PORT
 
-.PHONY: build run test test-integration lint tidy migrate-up migrate-down docker-up docker-down
+.PHONY: build run test test-integration lint tidy migrate-up migrate-down import docker-up docker-down
 
 build:
 	go build -o $(BIN) ./cmd/pokedex
@@ -33,6 +33,9 @@ migrate-up:
 
 migrate-down:
 	go run ./cmd/pokedex -migrate down
+
+import:
+	go run ./cmd/pokedex -import
 
 docker-up:
 	docker compose up --build -d
