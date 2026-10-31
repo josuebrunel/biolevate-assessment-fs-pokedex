@@ -10,6 +10,7 @@ import (
 
 // Config holds every runtime setting, loaded once at startup.
 type Config struct {
+	DatabaseURL     string        `env:"DATABASE_URL" required:"true"`
 	HTTPAddr        string        `env:"HTTP_ADDR" default:":8080"`
 	LogLevel        string        `env:"LOG_LEVEL" default:"info"`
 	ReadTimeout     time.Duration `env:"READ_TIMEOUT" default:"5s"`

@@ -17,6 +17,7 @@ func TestLoad(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("APP_DATABASE_URL", "postgres://test")
 			for k, v := range tt.env {
 				t.Setenv(k, v)
 			}
@@ -28,5 +29,12 @@ func TestLoad(t *testing.T) {
 				t.Errorf("got %q/%v, want %q/%v", cfg.HTTPAddr, cfg.WriteTimeout, tt.addr, tt.wto)
 			}
 		})
+	}
+}
+
+func TestLoadRequiresDatabaseURL(t *testing.T) {
+	t.Setenv("APP_DATABASE_URL", "")
+	if _, err := Load(); err == nil {
+		t.Fatal("expected an error when APP_DATABASE_URL is missing")
 	}
 }

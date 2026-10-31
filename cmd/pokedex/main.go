@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"syscall"
 
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/config"
+	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/db"
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/web"
 )
 
@@ -23,6 +25,9 @@ func main() {
 }
 
 func run() error {
+	migrate := flag.String("migrate", "", "run database migrations (up|down|revert) and exit")
+	flag.Parse()
+
 	cfg, err := config.Load()
 	if err != nil {
 		return err
@@ -36,6 +41,15 @@ func run() error {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	if *migrate != "" {
+		conn, err := db.Open(ctx, cfg.DatabaseURL)
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
+		return db.Migrate(ctx, conn, db.MigrateAction(*migrate))
+	}
 
 	srv := &http.Server{
 		Addr:         cfg.HTTPAddr,
