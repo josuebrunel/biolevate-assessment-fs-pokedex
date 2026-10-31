@@ -3,7 +3,6 @@ package search_test
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"log/slog"
 	"slices"
 	"testing"
@@ -12,14 +11,11 @@ import (
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/search"
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/testdb"
+	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/testutil"
 )
 
 func names(rs []search.Result) []string {
-	out := make([]string, len(rs))
-	for i, r := range rs {
-		out[i] = r.Name
-	}
-	return out
+	return testutil.Names(rs, func(r search.Result) string { return r.Name })
 }
 
 // indexOf returns the position of the named result, or -1.
@@ -229,10 +225,11 @@ func TestLexical(t *testing.T) {
 		if _, err := lexical.Retrieve(ctx, search.Parse("fast electric"), 5); err != nil {
 			t.Fatal(err)
 		}
-		var line map[string]any
-		if err := json.Unmarshal(buf.Bytes(), &line); err != nil {
-			t.Fatalf("log output %q: %v", buf.String(), err)
+		lines := testutil.LogLines(t, &buf)
+		if len(lines) != 1 {
+			t.Fatalf("got %d log lines: %s", len(lines), buf.String())
 		}
+		line := lines[0]
 		if line["msg"] != "search completed" || line["request_id"] != "req-9" || line["results"] != float64(5) {
 			t.Errorf("line = %v", line)
 		}

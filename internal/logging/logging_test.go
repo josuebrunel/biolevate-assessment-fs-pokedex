@@ -3,26 +3,10 @@ package logging
 import (
 	"bytes"
 	"context"
-	"encoding/json"
-	"strings"
 	"testing"
-)
 
-func decode(t *testing.T, buf *bytes.Buffer) []map[string]any {
-	t.Helper()
-	var out []map[string]any
-	for _, line := range strings.Split(strings.TrimSpace(buf.String()), "\n") {
-		if line == "" {
-			continue
-		}
-		m := map[string]any{}
-		if err := json.Unmarshal([]byte(line), &m); err != nil {
-			t.Fatalf("not JSON: %q: %v", line, err)
-		}
-		out = append(out, m)
-	}
-	return out
-}
+	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/testutil"
+)
 
 func TestRequestIDOnEveryRecord(t *testing.T) {
 	var buf bytes.Buffer
@@ -36,7 +20,7 @@ func TestRequestIDOnEveryRecord(t *testing.T) {
 	log.With("component", "store").WithGroup("g").InfoContext(ctx, "derived loggers keep it")
 	log.Info("without context")
 
-	lines := decode(t, &buf)
+	lines := testutil.LogLines(t, &buf)
 	if len(lines) != 3 {
 		t.Fatalf("got %d lines", len(lines))
 	}
@@ -76,7 +60,7 @@ func TestLevelFiltering(t *testing.T) {
 	log, _ := New(&buf, "json", "warn")
 	log.Info("hidden")
 	log.Warn("shown")
-	if lines := decode(t, &buf); len(lines) != 1 || lines[0]["msg"] != "shown" {
+	if lines := testutil.LogLines(t, &buf); len(lines) != 1 || lines[0]["msg"] != "shown" {
 		t.Errorf("lines = %v", lines)
 	}
 }

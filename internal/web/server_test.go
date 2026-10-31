@@ -12,6 +12,7 @@ import (
 	"github.com/labstack/echo/v5"
 
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/logging"
+	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/testutil"
 )
 
 // newTestServer returns a server logging JSON to the returned buffer, with a few
@@ -47,32 +48,6 @@ func do(e *echo.Echo, method, path, requestID string) *httptest.ResponseRecorder
 	return rec
 }
 
-func logLines(t *testing.T, buf *bytes.Buffer) []map[string]any {
-	t.Helper()
-	var out []map[string]any
-	for _, line := range strings.Split(strings.TrimSpace(buf.String()), "\n") {
-		if line == "" {
-			continue
-		}
-		m := map[string]any{}
-		if err := json.Unmarshal([]byte(line), &m); err != nil {
-			t.Fatalf("not JSON: %q", line)
-		}
-		out = append(out, m)
-	}
-	return out
-}
-
-func withMsg(lines []map[string]any, msg string) []map[string]any {
-	var out []map[string]any
-	for _, l := range lines {
-		if l["msg"] == msg {
-			out = append(out, l)
-		}
-	}
-	return out
-}
-
 func TestHealthz(t *testing.T) {
 	e, _ := newTestServer(t, "info")
 	rec := do(e, http.MethodGet, "/healthz", "")
@@ -89,7 +64,7 @@ func TestAccessLog(t *testing.T) {
 	e, buf := newTestServer(t, "debug")
 	do(e, http.MethodGet, "/healthz", "req-42")
 
-	lines := withMsg(logLines(t, buf), "request")
+	lines := testutil.WithMsg(testutil.LogLines(t, buf), "request")
 	if len(lines) != 1 {
 		t.Fatalf("got %d access lines, want exactly 1: %s", len(lines), buf)
 	}
@@ -149,7 +124,7 @@ func TestErrorHandling(t *testing.T) {
 				}
 			}
 
-			failed := withMsg(logLines(t, buf), "request failed")
+			failed := testutil.WithMsg(testutil.LogLines(t, buf), "request failed")
 			if len(failed) != 1 {
 				t.Fatalf("error logged %d times, want exactly once: %s", len(failed), buf)
 			}
@@ -158,7 +133,7 @@ func TestErrorHandling(t *testing.T) {
 			}
 
 			// The access line follows the status and carries the same request ID.
-			access := withMsg(logLines(t, buf), "request")
+			access := testutil.WithMsg(testutil.LogLines(t, buf), "request")
 			if len(access) != 1 || access[0]["status"] != float64(tt.wantStatus) || access[0]["request_id"] != "req-7" {
 				t.Errorf("access line = %v", access)
 			}
@@ -169,7 +144,7 @@ func TestErrorHandling(t *testing.T) {
 func TestUnexpectedErrorIsLoggedWithDetail(t *testing.T) {
 	e, buf := newTestServer(t, "info")
 	do(e, http.MethodGet, "/boom", "")
-	failed := withMsg(logLines(t, buf), "request failed")
+	failed := testutil.WithMsg(testutil.LogLines(t, buf), "request failed")
 	if len(failed) != 1 || !strings.Contains(failed[0]["err"].(string), "connection to db.internal") {
 		t.Errorf("underlying error missing from the log: %v", failed)
 	}

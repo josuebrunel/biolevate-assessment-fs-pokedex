@@ -25,6 +25,7 @@
   - [Query parser](#query-parser)
   - [Lexical retriever](#lexical-retriever)
   - [Logging](#logging)
+  - [Code conventions](#code-conventions)
   - [Commands](#commands)
 
 # Assessment
@@ -321,6 +322,19 @@ Logs are structured (`log/slog`), one JSON object per line by default.
 - **No secrets:** the config is logged through `slog.LogValuer`, which reduces the
   database URL to scheme, host and database name. A test asserts a password
   never reaches the output.
+
+## Code conventions
+
+- **DRY, with generics where they pay off:** one `getMany[T]` loads any table by
+  id, `rowsOf[T]` builds import rows, `candidatesOf[T]` maps search rows to
+  candidates, `sortedUnique[T]` and `byID[T]` normalise id and type lists. Test
+  helpers shared across packages live in `internal/testutil` and
+  `internal/testdb`.
+- Two near-duplicates are kept on purpose: `statExprs` (stat to SQL column) and
+  `statValue` (stat to Go field) sit on opposite sides of the database boundary,
+  and a generic mapping would be harder to read than two short switches.
+- Naming follows `<Noun><Operation>` (`PokemonGetMany`, `MoveList`).
+- Errors are wrapped with context and logged once, centrally.
 
 ## Commands
 

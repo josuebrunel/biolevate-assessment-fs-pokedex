@@ -8,22 +8,15 @@ import (
 
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/testdb"
+	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/testutil"
 )
 
 func names(hits []store.Hit) []string {
-	out := make([]string, len(hits))
-	for i, h := range hits {
-		out[i] = h.Name
-	}
-	return out
+	return testutil.Names(hits, func(h store.Hit) string { return h.Name })
 }
 
 func pokemonNames(p []store.Pokemon) []string {
-	out := make([]string, len(p))
-	for i, x := range p {
-		out[i] = x.Name
-	}
-	return out
+	return testutil.Names(p, func(x store.Pokemon) string { return x.Name })
 }
 
 func TestStore(t *testing.T) {

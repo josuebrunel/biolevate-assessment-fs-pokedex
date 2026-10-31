@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
+	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/testutil"
 )
 
 func cand(kind store.Kind, id int, name, reason string) candidate {
@@ -12,11 +13,7 @@ func cand(kind store.Kind, id int, name, reason string) candidate {
 }
 
 func resultNames(rs []Result) []string {
-	out := make([]string, len(rs))
-	for i, r := range rs {
-		out[i] = r.Name
-	}
-	return out
+	return testutil.Names(rs, func(r Result) string { return r.Name })
 }
 
 func TestFuse(t *testing.T) {
