@@ -1,6 +1,9 @@
 package config
 
 import (
+	"bytes"
+	"log/slog"
+	"strings"
 	"testing"
 	"time"
 )
@@ -36,5 +39,23 @@ func TestLoadRequiresDatabaseURL(t *testing.T) {
 	t.Setenv("APP_DATABASE_URL", "")
 	if _, err := Load(); err == nil {
 		t.Fatal("expected an error when APP_DATABASE_URL is missing")
+	}
+}
+
+func TestLogValueNeverLeaksCredentials(t *testing.T) {
+	cfg := Config{DatabaseURL: "postgres://pokedex:s3cret-pw@db.internal:5432/pokedex?sslmode=disable&password=s3cret-pw", HTTPAddr: ":8080"}
+
+	var buf bytes.Buffer
+	slog.New(slog.NewJSONHandler(&buf, nil)).Info("config loaded", "config", cfg)
+
+	out := buf.String()
+	if strings.Contains(out, "s3cret-pw") || strings.Contains(out, "pokedex:") {
+		t.Errorf("credentials leaked: %s", out)
+	}
+	if !strings.Contains(out, "postgres://db.internal:5432/pokedex") {
+		t.Errorf("host and database missing: %s", out)
+	}
+	if got := redactURL("not a url"); got != "invalid" {
+		t.Errorf("redactURL(garbage) = %q", got)
 	}
 }
