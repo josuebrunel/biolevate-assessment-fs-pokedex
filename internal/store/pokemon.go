@@ -182,6 +182,8 @@ const (
 	StatSpecialDefense Stat = "special-defense"
 	StatSpeed          Stat = "speed"
 	StatTotal          Stat = "total"
+	StatHeight         Stat = "height"
+	StatWeight         Stat = "weight"
 )
 
 // statExprs maps a Stat to a fixed SQL expression: user input never reaches SQL text.
@@ -193,11 +195,18 @@ var statExprs = map[Stat]string{
 	StatSpecialDefense: "special_defense",
 	StatSpeed:          "speed",
 	StatTotal:          "(hp + attack + defense + special_attack + special_defense + speed)",
+	StatHeight:         "height_decimetres",
+	StatWeight:         "weight_hectograms",
 }
+
+// nullableSorts are the sorts whose column may be NULL, so missing values sort
+// last. Their indexes are declared NULLS LAST to match.
+var nullableSorts = map[Stat]bool{StatHeight: true, StatWeight: true}
 
 // PokemonListParams are the criteria for PokemonList.
 type PokemonListParams struct {
 	Types     []string // Pokémon must have every listed type
+	Legendary bool     // only legendary and mythical Pokémon
 	SortBy    Stat     // empty sorts by id
 	Ascending bool     // stats sort descending (best first) unless set
 	Limit     int
@@ -217,6 +226,10 @@ func (s *Store) PokemonList(ctx context.Context, p PokemonListParams) ([]Pokemon
 				") GROUP BY pokemon_id HAVING count(DISTINCT type) = ?)", args...)))
 	}
 
+	if p.Legendary {
+		mods = append(mods, sm.Where(psql.Raw("(is_legendary OR is_mythical)")))
+	}
+
 	if p.SortBy == "" {
 		mods = append(mods, sm.OrderBy("id"))
 	} else {
@@ -226,10 +239,14 @@ func (s *Store) PokemonList(ctx context.Context, p PokemonListParams) ([]Pokemon
 		}
 		order := sm.OrderBy(psql.Raw(expr))
 		if p.Ascending {
-			mods = append(mods, order.Asc())
+			order = order.Asc()
 		} else {
-			mods = append(mods, order.Desc())
+			order = order.Desc()
 		}
+		if nullableSorts[p.SortBy] { // the stat columns are NOT NULL; only sizes can be missing
+			order = order.NullsLast()
+		}
+		mods = append(mods, order)
 		mods = append(mods, sm.OrderBy("id"))
 	}
 	return s.selectPokemon(ctx, mods...)

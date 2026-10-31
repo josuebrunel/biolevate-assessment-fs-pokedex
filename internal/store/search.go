@@ -10,9 +10,19 @@ import (
 
 var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 
-// NameSearch finds entities by name with prefix and typo tolerance. Prefix
-// matches always outrank fuzzy trigram matches. Spaces in q are read as
-// hyphens, so "mr m" finds "mr-mime".
+// containsMinLen is the shortest fragment matched anywhere inside a name. The
+// trigram index serves LIKE '%x%' from three characters; shorter fragments
+// would match nearly everything.
+const containsMinLen = 3
+
+// containsScore ranks a name that merely contains the fragment: above a pure
+// typo match, below any prefix match (which scores 1 and more).
+const containsScore = 0.5
+
+// NameSearch finds entities by name with prefix, substring and typo tolerance.
+// Prefix matches always outrank substring matches ("chu" finds "pikachu"),
+// which outrank fuzzy trigram matches. Spaces in q are read as hyphens, so
+// "mr m" finds "mr-mime".
 func (s *Store) NameSearch(ctx context.Context, kind Kind, q string, limit int) ([]Hit, error) {
 	if err := kind.valid(); err != nil {
 		return nil, err
@@ -21,12 +31,21 @@ func (s *Store) NameSearch(ctx context.Context, kind Kind, q string, limit int) 
 	if q == "" {
 		return nil, nil
 	}
-	prefix := likeEscaper.Replace(q) + "%"
+	escaped := likeEscaper.Replace(q)
+	prefix := escaped + "%"
+
+	score := psql.Raw("similarity(name, ?) + CASE WHEN name LIKE ? THEN 1 ELSE 0 END AS score", q, prefix)
+	match := psql.Raw("name LIKE ? OR name % ?", prefix, q)
+	if len(q) >= containsMinLen {
+		contains := "%" + escaped + "%"
+		score = psql.Raw("similarity(name, ?) + CASE WHEN name LIKE ? THEN 1 WHEN name LIKE ? THEN ? ELSE 0 END AS score", q, prefix, contains, containsScore)
+		match = psql.Raw("name LIKE ? OR name LIKE ? OR name % ?", prefix, contains, q)
+	}
 
 	query := psql.Select(
-		sm.Columns("id", "name", psql.Raw("similarity(name, ?) + CASE WHEN name LIKE ? THEN 1 ELSE 0 END AS score", q, prefix)),
+		sm.Columns("id", "name", score),
 		sm.From(string(kind)),
-		sm.Where(psql.Raw("name LIKE ? OR name % ?", prefix, q)),
+		sm.Where(match),
 		sm.OrderBy("score").Desc(), sm.OrderBy("name"),
 		sm.Limit(limitOrDefault(limit)),
 	)

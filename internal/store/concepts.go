@@ -17,9 +17,10 @@ type Concept struct {
 	Aliases []string
 	Terms   []string
 	Types   []string // Pokémon types the condition favours, may be empty
+	Pokemon []string // names of the Pokémon the concept stands for, may be empty
 }
 
-// ConceptList loads every concept with its aliases and terms in four queries.
+// ConceptList loads every concept with its aliases and terms in five queries.
 // The set is small and static, so callers load it once at startup.
 func (s *Store) ConceptList(ctx context.Context) ([]Concept, error) {
 	type conceptRow struct {
@@ -60,9 +61,14 @@ func (s *Store) ConceptList(ctx context.Context) ([]Concept, error) {
 		return nil, err
 	}
 
+	collection, err := words("concept_pokemon", "pokemon")
+	if err != nil {
+		return nil, err
+	}
+
 	out := make([]Concept, len(concepts))
 	for i, c := range concepts {
-		out[i] = Concept{Key: c.Key, Label: c.Label, Aliases: aliases[c.Key], Terms: terms[c.Key], Types: types[c.Key]}
+		out[i] = Concept{Key: c.Key, Label: c.Label, Aliases: aliases[c.Key], Terms: terms[c.Key], Types: types[c.Key], Pokemon: collection[c.Key]}
 	}
 	return out, nil
 }

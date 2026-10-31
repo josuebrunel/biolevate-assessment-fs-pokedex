@@ -16,6 +16,14 @@ func names(hits []store.Hit) []string {
 	return testutil.Names(hits, func(h store.Hit) string { return h.Name })
 }
 
+func hitNames(hits []store.Hit) []string {
+	out := make([]string, len(hits))
+	for i, h := range hits {
+		out[i] = h.Name
+	}
+	return out
+}
+
 func pokemonNames(p []store.Pokemon) []string {
 	return testutil.Names(p, func(x store.Pokemon) string { return x.Name })
 }
@@ -237,6 +245,53 @@ func TestStore(t *testing.T) {
 		}
 		if _, err := s.MoveList(ctx, store.MoveListParams{}); err == nil {
 			t.Error("expected an error without types")
+		}
+	})
+
+	t.Run("legendary filter combines with a type", func(t *testing.T) {
+		// A bare "is_legendary OR is_mythical" would let Mew (psychic) through the fire filter.
+		got, err := s.PokemonList(ctx, store.PokemonListParams{Types: []string{"fire"}, Legendary: true})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if g := pokemonNames(got); !slices.Equal(g, []string{"moltres"}) {
+			t.Errorf("legendary fire = %v, want [moltres]", g)
+		}
+		all, err := s.PokemonList(ctx, store.PokemonListParams{Legendary: true})
+		if err != nil || len(all) != 5 {
+			t.Errorf("legendary and mythical = %d (%v), want 5", len(all), err)
+		}
+	})
+
+	t.Run("size sorts", func(t *testing.T) {
+		heavy, err := s.PokemonList(ctx, store.PokemonListParams{SortBy: store.StatWeight, Limit: 2})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if g := pokemonNames(heavy); g[0] != "snorlax" {
+			t.Errorf("heaviest = %v, want snorlax first", g)
+		}
+		short, err := s.PokemonList(ctx, store.PokemonListParams{SortBy: store.StatHeight, Ascending: true, Limit: 1})
+		if err != nil || pokemonNames(short)[0] != "diglett" {
+			t.Errorf("shortest = %v, %v", pokemonNames(short), err)
+		}
+	})
+
+	t.Run("a fragment matches inside a name", func(t *testing.T) {
+		hits, err := s.NameSearch(ctx, store.KindPokemon, "chu", 10)
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := hitNames(hits)
+		if !slices.Contains(names, "pikachu") || !slices.Contains(names, "raichu") {
+			t.Errorf("chu = %v, want pikachu and raichu", names)
+		}
+		prefix, _ := s.NameSearch(ctx, store.KindPokemon, "pika", 5)
+		if len(prefix) == 0 || prefix[0].Name != "pikachu" || prefix[0].Score < 1 {
+			t.Errorf("a prefix must still outrank a substring: %+v", prefix)
+		}
+		if short, err := s.NameSearch(ctx, store.KindPokemon, "ch", 50); err != nil || len(short) > 20 {
+			t.Errorf("two letters must not match everything: %d, %v", len(short), err)
 		}
 	})
 
