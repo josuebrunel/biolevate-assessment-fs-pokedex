@@ -34,8 +34,11 @@ func (s *Store) NameSearch(ctx context.Context, kind Kind, q string, limit int) 
 }
 
 // TextSearch runs full-text search over the weighted search_doc column. A row
-// matches when it satisfies any of the terms; each term is parsed as plain
-// text (all of its words must appear). Hits are ordered by ts_rank_cd.
+// matches when it satisfies any of the terms. A single-word term matches that
+// word's stem; a term with spaces is a phrase whose words must appear in order
+// ("puts the target to sleep"), so phrases rank causal text above mere
+// mentions. Hits are ordered by ts_rank_cd, which rewards matching several
+// terms.
 func (s *Store) TextSearch(ctx context.Context, kind Kind, terms []string, limit int) ([]Hit, error) {
 	if err := kind.valid(); err != nil {
 		return nil, err
@@ -44,7 +47,11 @@ func (s *Store) TextSearch(ctx context.Context, kind Kind, terms []string, limit
 	var args []any
 	for _, t := range terms {
 		if t = strings.TrimSpace(t); t != "" {
-			parts = append(parts, "plainto_tsquery('english', ?)")
+			fn := "plainto_tsquery"
+			if strings.ContainsAny(t, " \t") {
+				fn = "phraseto_tsquery"
+			}
+			parts = append(parts, fn+"('english', ?)")
 			args = append(args, t)
 		}
 	}

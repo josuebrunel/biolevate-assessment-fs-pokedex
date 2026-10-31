@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"sort"
 	"testing"
 
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
@@ -103,6 +104,39 @@ func TestStore(t *testing.T) {
 		// Hostile input stays data, not SQL.
 		if _, err := s.TextSearch(ctx, store.KindMove, []string{"'); DROP TABLE moves; --"}, 5); err != nil {
 			t.Errorf("hostile term: %v", err)
+		}
+	})
+
+	t.Run("TextSearch phrases rank causal text, not mentions", func(t *testing.T) {
+		hits, err := s.TextSearch(ctx, store.KindMove, []string{"puts the target to sleep"}, 50)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := names(hits)
+		slices.Sort(got)
+		want := []string{"hypnosis", "lovely-kiss", "sing", "sleep-powder", "spore"}
+		if !slices.Equal(got, want) {
+			t.Errorf("phrase hits = %v, want %v (rest and dream-eater only mention sleep)", got, want)
+		}
+	})
+
+	t.Run("ConceptList", func(t *testing.T) {
+		concepts, err := s.ConceptList(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(concepts) < 10 || !sort.SliceIsSorted(concepts, func(i, j int) bool { return concepts[i].Key < concepts[j].Key }) {
+			t.Fatalf("concepts = %d, sorted by key: %v", len(concepts), concepts)
+		}
+		var sleep *store.Concept
+		for i := range concepts {
+			if concepts[i].Key == "sleep" {
+				sleep = &concepts[i]
+			}
+		}
+		if sleep == nil || sleep.Label != "Sleep" ||
+			!slices.Contains(sleep.Aliases, "asleep") || !slices.Contains(sleep.Terms, "puts the target to sleep") {
+			t.Errorf("sleep = %+v", sleep)
 		}
 	})
 
