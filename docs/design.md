@@ -159,7 +159,7 @@ so every interpretation is explainable and testable.
 | `火`, `🔥` | non-Latin words are dropped with a note; a query with nothing searchable gets a note too |
 | `e`, `pokemon` | a single letter or a bare kind word is not searched; a note asks for more |
 
-**Notes.** When the parser or engine understood something it could not act on (an ignored word, a negation it cannot apply, an impossible type pair, a query too short), it adds a plain-language **note**, shown in Professor Chen's box. A search is never silently empty or silently wrong when the reason is known. Two retrieval rules support this: a name that matches **exactly** does not follow its description into the graph (so `mr mime` is not about the move Mimic), and a name with no match is retried without hyphens (`pi-ka-chu`).
+**Notes.** When the parser or engine understood something it could not act on (an ignored word, a negation it cannot apply, an impossible type pair, a query too short), it adds a plain-language **note**, shown in Professor Chen's box. A search is never silently empty or silently wrong when the reason is known. **Filters narrow the graph.** When a move or ability was found, the type, colour, negation and legendary filters also narrow the Pokémon it leads to, so `acid and pink` means pink Pokémon that use Acid; if there are none, a note says so instead of listing unrelated Pokémon. Two retrieval rules support this: a name that matches **exactly** does not follow its description into the graph (so `mr mime` is not about the move Mimic), and a name with no match is retried without hyphens (`pi-ka-chu`).
 
 The result is a set of hints, not filters. `poison` is both a type and a word in
 move effects, so the retrievers decide how to combine types, terms and the full
@@ -356,7 +356,7 @@ JavaScript; HTMX only removes the full reload.
 
 ## Golden-query suite
 
-`internal/golden` scores the engine against 88 queries with known good answers
+`internal/golden` scores the engine against 91 queries with known good answers
 (`cases.json`), through the real engine and Postgres. Cases cover the four
 challenges plus typos, hostile input, empty queries and odd input (negation, colours, impossible type pairs), in six categories.
 
@@ -371,10 +371,10 @@ category                     cases  passed  recall  MRR
 criteria and comparison      16     16      1.00    0.74
 names and typos              16     16      1.00    0.83
 negatives and hostile input  5      5       -       -
-odd input                    17     17      1.00    0.88
+odd input                    20     20      1.00    0.85
 strategy bundles             8      8       1.00    0.55
 vocabulary-free discovery    26     26      1.00    0.52
-core total                   88     88      1.00    0.64
+core total                   91     91      1.00    0.64
 ```
 
 A case can carry a `known` flag with the reason the engine misses it. A known

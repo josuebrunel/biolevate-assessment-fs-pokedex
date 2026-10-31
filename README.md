@@ -218,7 +218,7 @@ Also works: `chu`, `legendary fire`, `heaviest`, `pokemon with levitate`, `water
 
 | Check | What it proves |
 |---|---|
-| **Golden suite** (88 queries) | Expected results within the expected rank; recall and MRR per category. **Written by the engine's author, so it guards regressions; it is not an independent benchmark.** |
+| **Golden suite** (91 queries) | Expected results within the expected rank; recall and MRR per category. **Written by the engine's author, so it guards regressions; it is not an independent benchmark.** |
 | **Index guard** | Every query's plan is checked; **one that would scan a table fails the test**. |
 | **Query-count test** | The same number of queries for 2 or 40 results (**no N+1**). |
 | **Real-Postgres and end-to-end tests** | Store, importer, migrations, web layer and the four situations, through HTTP and the templates. |

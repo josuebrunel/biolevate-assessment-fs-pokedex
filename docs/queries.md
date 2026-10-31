@@ -33,9 +33,10 @@ What to type, what the engine returns, and how it is tested. The deep dives are 
 | `fire or flying` | The same two (both types) | `or` is not understood yet; it is dropped as a filler word. |
 | `fire water` | Nothing, and a note | No Pokémon here has both types. |
 | `electric not flying` | Electric types without Zapdos | Negation applies to the next word. |
-| `acid and pink` | The move Acid and its users, plus pink Pokémon | A **filter** (type or colour) and a **search word** are ranked together, not intersected. No pink Pokémon learns Acid in this data, so a strict "pink and acid" would be empty. |
+| `acid and pink` | The move Acid, and a note: no pink Pokémon is linked to it | A **filter** (type, colour, negation, legendary) **narrows the Pokémon** found through a move or ability. No pink Pokémon learns Acid in this data, so none are listed, and the page says why. |
+| `electric thunder` | Thunder and the electric Pokémon that learn it | The same rule with a match: Zapdos, Jolteon and others, not every Pokémon that learns Thunder. |
 
-Known gap: filters (type, colour) do not narrow the Pokémon found through a move or ability. See the next steps in the README.
+Known gap: `or` between filters is not understood yet (`fire or flying` behaves like `fire flying`).
 
 ## Held-out queries
 
@@ -63,5 +64,5 @@ Query 14 may legitimately find little, and that is fine to report.
 
 ## How queries are tested
 
-- **Golden suite** (`internal/golden/cases.json`, 88 cases): written by the engine's author while tuning, so it guards regressions. Run `make eval`.
+- **Golden suite** (`internal/golden/cases.json`, 91 cases): written by the engine's author while tuning, so it guards regressions. Run `make eval`.
 - **Held-out set** (above): not tuned against, reported separately once run.
