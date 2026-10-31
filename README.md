@@ -15,6 +15,7 @@
   - [Stack](#stack)
   - [Data and schema](#data-and-schema)
   - [Store layer](#store-layer)
+  - [Query optimization](#query-optimization)
   - [Commands](#commands)
 
 # Assessment
@@ -133,6 +134,7 @@ AI-use disclosure land here as they are built.
 | [Docker Compose + Goose schema](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/2) | done |
 | [Import command](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/3) | done |
 | [Store layer](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/4) | done |
+| [Query optimization guard](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/5) | done |
 | Search (query parsing, retrieval, concepts, graph expansion) | planned |
 | Web UI and compare view | planned |
 | Golden-query suite, hardening, write-up | planned |
@@ -195,6 +197,28 @@ All SQL is built with bound parameters. Table and sort-column names come from
 fixed allowlists, never from user input, and `LIKE` wildcards in queries are
 escaped. Tests run against the real dataset and assert query counts, so an N+1
 regression fails the build.
+
+## Query optimization
+
+Every query must be able to use an index, and this is enforced rather than
+reviewed by eye. Tests run their queries through `testdb.Recorder`, which
+records each distinct statement; `CheckPlans` then runs `EXPLAIN` on all of
+them with sequential scans disabled. With `enable_seqscan = off` Postgres only
+falls back to a `Seq Scan` when no index path exists, so the check is meaningful
+even on a 151-row table where a seq scan would otherwise win. A test drops an
+index on purpose to prove the guard fails.
+
+What backs the queries:
+
+- name search: trigram GIN indexes (`LIKE` prefix and `%` similarity);
+- full-text: GIN on the generated `search_doc` columns;
+- type filters: `pokemon_types (type, pokemon_id)`;
+- stat sorts: `(stat DESC, id)` indexes plus one on the base stat total expression;
+- graph lookups and hydration: primary keys and the reverse join indexes.
+
+The importer runs `ANALYZE` after loading so the planner starts with fresh
+statistics. Adding a query? Exercise it in a test that uses the recorder; if it
+needs an index the guard will say so, and the index goes in a new migration.
 
 ## Commands
 

@@ -4,26 +4,11 @@ import (
 	"context"
 	"errors"
 	"slices"
-	"sync/atomic"
 	"testing"
-
-	"github.com/stephenafamo/bob"
-	"github.com/stephenafamo/scan"
 
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/testdb"
 )
-
-// countingExecutor counts queries so tests can assert hydration stays constant-time (no N+1).
-type countingExecutor struct {
-	bob.Executor
-	queries atomic.Int64
-}
-
-func (c *countingExecutor) QueryContext(ctx context.Context, query string, args ...any) (scan.Rows, error) {
-	c.queries.Add(1)
-	return c.Executor.QueryContext(ctx, query, args...)
-}
 
 func names(hits []store.Hit) []string {
 	out := make([]string, len(hits))
@@ -44,8 +29,8 @@ func pokemonNames(p []store.Pokemon) []string {
 func TestStore(t *testing.T) {
 	ctx := context.Background()
 	conn := testdb.Loaded(t)
-	counter := &countingExecutor{Executor: bob.NewDB(conn)}
-	s := store.New(counter)
+	rec := testdb.NewRecorder(conn)
+	s := store.New(rec)
 
 	t.Run("NameSearch", func(t *testing.T) {
 		tests := []struct {
@@ -270,13 +255,16 @@ func TestStore(t *testing.T) {
 			{"PokemonGetByName", func() error { _, err := s.PokemonGetByName(ctx, "pikachu"); return err }, 4},
 		}
 		for _, tt := range tests {
-			before := counter.queries.Load()
+			before := rec.Count()
 			if err := tt.run(); err != nil {
 				t.Fatalf("%s: %v", tt.name, err)
 			}
-			if got := counter.queries.Load() - before; got != tt.queries {
+			if got := rec.Count() - before; got != tt.queries {
 				t.Errorf("%s: %d queries, want %d", tt.name, got, tt.queries)
 			}
 		}
 	})
+
+	// Keep last: it checks the plan of every query the subtests above issued.
+	t.Run("every query can use an index", func(t *testing.T) { rec.CheckPlans(t, conn) })
 }
