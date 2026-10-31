@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 
 	"github.com/stephenafamo/bob"
 	"github.com/stephenafamo/bob/dialect/psql"
@@ -24,7 +23,7 @@ func (s *Store) MoveList(ctx context.Context, p MoveListParams) ([]Move, error) 
 	if len(p.Types) == 0 {
 		return nil, errors.New("move list needs at least one type")
 	}
-	types := slices.Compact(slices.Sorted(slices.Values(p.Types)))
+	types := sortedUnique(p.Types)
 	q := psql.Select(
 		sm.Columns(columnExprs("", moveColumns)...), sm.From("moves"),
 		sm.Where(psql.Quote("type").In(psql.Arg(anySlice(types)...))),

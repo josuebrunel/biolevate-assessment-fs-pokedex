@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/stephenafamo/bob"
@@ -111,8 +110,7 @@ func (s *Store) PokemonGetMany(ctx context.Context, ids []int) ([]Pokemon, error
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	unique := slices.Compact(slices.Sorted(slices.Values(ids)))
-	pokemon, err := s.selectPokemon(ctx, sm.Where(psql.Quote("id").In(psql.Arg(anySlice(unique)...))))
+	pokemon, err := s.selectPokemon(ctx, sm.Where(psql.Quote("id").In(psql.Arg(anySlice(sortedUnique(ids))...))))
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +186,7 @@ func (s *Store) PokemonList(ctx context.Context, p PokemonListParams) ([]Pokemon
 	mods := []bob.Mod[*dialect.SelectQuery]{sm.Limit(limitOrDefault(p.Limit))}
 
 	if len(p.Types) > 0 {
-		types := slices.Compact(slices.Sorted(slices.Values(p.Types)))
+		types := sortedUnique(p.Types)
 		args := anySlice(types)
 		args = append(args, len(types))
 		placeholders := strings.TrimSuffix(strings.Repeat("?, ", len(types)), ", ")

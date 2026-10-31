@@ -6,6 +6,7 @@
 package store
 
 import (
+	"cmp"
 	"context"
 	"database/sql"
 	"errors"
@@ -188,30 +189,43 @@ func byID[T any](ids []int, items []T, id func(T) int) []T {
 	return out
 }
 
-// MoveGetMany loads moves by id in the order requested; unknown ids are skipped.
-func (s *Store) MoveGetMany(ctx context.Context, ids []int) ([]Move, error) {
+// sortedUnique returns xs sorted without duplicates, giving queries a stable,
+// minimal bind list.
+func sortedUnique[T cmp.Ordered](xs []T) []T {
+	return slices.Compact(slices.Sorted(slices.Values(xs)))
+}
+
+// getMany loads rows of one table by id with a single query and returns them in
+// the order of ids, skipping ids that match nothing. T maps columns through its
+// db tags; what names the entity for error messages.
+func getMany[T any](ctx context.Context, s *Store, table, what string, columns []string, ids []int, idOf func(T) int) ([]T, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	q := psql.Select(sm.Columns(columnExprs("", moveColumns)...), sm.From("moves"),
-		sm.Where(psql.Quote("id").In(psql.Arg(anySlice(slices.Compact(slices.Sorted(slices.Values(ids))))...))))
-	moves, err := bob.All(ctx, s.db, q, scan.StructMapper[Move]())
+	q := psql.Select(sm.Columns(columnExprs("", columns)...), sm.From(table),
+		sm.Where(psql.Quote("id").In(psql.Arg(anySlice(sortedUnique(ids))...))))
+	rows, err := bob.All(ctx, s.db, q, scan.StructMapper[T]())
 	if err != nil {
-		return nil, fmt.Errorf("load moves: %w", err)
+		return nil, fmt.Errorf("load %s: %w", what, err)
 	}
-	return byID(ids, moves, func(m Move) int { return m.ID }), nil
+	return byID(ids, rows, idOf), nil
+}
+
+// MoveGetMany loads moves by id in the order requested; unknown ids are skipped.
+func (s *Store) MoveGetMany(ctx context.Context, ids []int) ([]Move, error) {
+	return getMany(ctx, s, "moves", "moves", moveColumns, ids, func(m Move) int { return m.ID })
 }
 
 // AbilityGetMany loads abilities by id in the order requested; unknown ids are skipped.
 func (s *Store) AbilityGetMany(ctx context.Context, ids []int) ([]Ability, error) {
-	if len(ids) == 0 {
-		return nil, nil
-	}
-	q := psql.Select(sm.Columns(columnExprs("", abilityColumns)...), sm.From("abilities"),
-		sm.Where(psql.Quote("id").In(psql.Arg(anySlice(slices.Compact(slices.Sorted(slices.Values(ids))))...))))
-	abilities, err := bob.All(ctx, s.db, q, scan.StructMapper[Ability]())
+	return getMany(ctx, s, "abilities", "abilities", abilityColumns, ids, func(a Ability) int { return a.ID })
+}
+
+// hits runs a search query selecting id, name and score.
+func (s *Store) hits(ctx context.Context, what string, q bob.Query) ([]Hit, error) {
+	hits, err := bob.All(ctx, s.db, q, scan.StructMapper[Hit]())
 	if err != nil {
-		return nil, fmt.Errorf("load abilities: %w", err)
+		return nil, fmt.Errorf("search %s: %w", what, err)
 	}
-	return byID(ids, abilities, func(a Ability) int { return a.ID }), nil
+	return hits, nil
 }

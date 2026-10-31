@@ -2,13 +2,10 @@ package store
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
-	"github.com/stephenafamo/bob"
 	"github.com/stephenafamo/bob/dialect/psql"
 	"github.com/stephenafamo/bob/dialect/psql/sm"
-	"github.com/stephenafamo/scan"
 )
 
 var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
@@ -33,11 +30,7 @@ func (s *Store) NameSearch(ctx context.Context, kind Kind, q string, limit int) 
 		sm.OrderBy("score").Desc(), sm.OrderBy("name"),
 		sm.Limit(limitOrDefault(limit)),
 	)
-	hits, err := bob.All(ctx, s.db, query, scan.StructMapper[Hit]())
-	if err != nil {
-		return nil, fmt.Errorf("search %s names: %w", kind, err)
-	}
-	return hits, nil
+	return s.hits(ctx, string(kind)+" names", query)
 }
 
 // TextSearch runs full-text search over the weighted search_doc column. A row
@@ -67,9 +60,5 @@ func (s *Store) TextSearch(ctx context.Context, kind Kind, terms []string, limit
 		sm.OrderBy("score").Desc(), sm.OrderBy("name"),
 		sm.Limit(limitOrDefault(limit)),
 	)
-	hits, err := bob.All(ctx, s.db, query, scan.StructMapper[Hit]())
-	if err != nil {
-		return nil, fmt.Errorf("search %s text: %w", kind, err)
-	}
-	return hits, nil
+	return s.hits(ctx, string(kind)+" text", query)
 }
