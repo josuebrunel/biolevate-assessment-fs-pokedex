@@ -17,6 +17,7 @@
   - [Store layer](#store-layer)
   - [Query optimization](#query-optimization)
   - [Query parser](#query-parser)
+  - [Lexical retriever](#lexical-retriever)
   - [Commands](#commands)
 
 # Assessment
@@ -137,6 +138,7 @@ AI-use disclosure land here as they are built.
 | [Store layer](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/4) | done |
 | [Query optimization guard](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/5) | done |
 | [Query parser](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/6) | done |
+| [Lexical retriever](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/7) | done |
 | Search (query parsing, retrieval, concepts, graph expansion) | planned |
 | Web UI and compare view | planned |
 | Golden-query suite, hardening, write-up | planned |
@@ -243,6 +245,46 @@ The result is a set of hints, not filters. `poison` is both a type and a word in
 move effects, so the retrievers decide how to combine types, terms and the full
 token list. `Interpretation()` returns short phrases ("type: electric", "sorted
 by speed") so the UI can show users how their query was read.
+
+## Lexical retriever
+
+`search.Lexical` turns a parsed query into ranked results across Pokémon, moves
+and abilities. It sits behind a small `Retriever` interface so the optional
+vector retriever can be fused with it later.
+
+Three sources feed it:
+
+| Source | Used for | Weight |
+|---|---|---|
+| name search, exact and prefix | "bulba", "mr m", "thunder" | 1.0 |
+| name search, trigram only | typos ("pikchu") | 0.5 |
+| criteria listing | type filters and stat sorts ("fast electric", "electric moves") | 1.0 |
+| full-text search | free terms ("sleep", "rain") | 0.7 |
+
+Sources are merged with **reciprocal rank fusion**, not by adding raw scores:
+trigram similarity, `ts_rank_cd` and a stat sort are not comparable, but ranks
+are. An entity found by several sources rises. Fuzzy name matches carry a lower
+weight so that a typo still finds its Pokémon while `rain` cannot rank `raichu`
+above real mentions of rain. Terms shorter than three letters skip full-text
+search, where they only add noise.
+
+Every result carries `Reasons` ("name starts with “bulba”", "type: electric,
+speed: 150", "text mentions sleep") for the UI. Full-text results for different
+kinds stay separate lists, so exploratory queries return a mix of Pokémon,
+moves and abilities instead of whichever table scores highest.
+
+Known limits, addressed in the next steps:
+
+- Pure lexical search cannot bridge vocabulary: the English stemmer treats
+  `paralysis` and `paralyze` as different words, so "moves that cause
+  paralysis" finds nothing yet. A test already shows an expander hook fixing it;
+  the concept map plugs into that hook.
+- Text hits only say that a term appears, not why an entity is relevant. Showing
+  that a Pokémon matters because it learns Hypnosis comes with graph expansion.
+- The dataset is Gen 1 only, so there is no Rain Dance move. A rain strategy has
+  to be assembled from abilities (`swift-swim`, `rain-dish`, `dry-skin`,
+  `hydration`), moves whose text mentions weather (`thunder`, `solar-beam`) and
+  Water types.
 
 ## Commands
 
