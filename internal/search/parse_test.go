@@ -37,6 +37,21 @@ func TestParse(t *testing.T) {
 		{"bulky", "tanky normal", Query{Types: []string{"normal"}, Sort: store.StatHP}},
 		{"weakest", "weakest", Query{Sort: store.StatTotal, Ascending: true}},
 
+		// Size and legendary status.
+		{"heaviest", "heaviest", Query{Sort: store.StatWeight}},
+		{"lightest water", "lightest water", Query{Types: []string{"water"}, Sort: store.StatWeight, Ascending: true}},
+		{"tallest", "tallest", Query{Sort: store.StatHeight}},
+		{"shortest", "shortest", Query{Sort: store.StatHeight, Ascending: true}},
+		{"light screen is a move, not a sort", "light screen", Query{Terms: []string{"light", "screen"}}},
+		{"legendary", "legendary fire", Query{Types: []string{"fire"}, Legendary: true}},
+		{"mythical", "mythical", Query{Legendary: true}},
+
+		// A stat after an effect verb is an effect to search for, not a sort.
+		{"raise defense", "raise defense", Query{Terms: []string{"raise", "defense"}, Effect: true}},
+		{"lower speed", "moves that lower speed", Query{Terms: []string{"lower", "speed"}, Kinds: []store.Kind{store.KindMove}, Effect: true}},
+		{"defense alone still sorts", "defense", Query{Sort: store.StatDefense}},
+		{"defensive still sorts", "most defensive water", Query{Terms: []string{"most"}, Types: []string{"water"}, Sort: store.StatDefense}},
+
 		// Limits.
 		{"top n", "top 5 strongest fire", Query{Types: []string{"fire"}, Sort: store.StatAttack, Limit: 5}},
 		{"top n is capped", "top 9999 fire", Query{Types: []string{"fire"}, Limit: maxLimit}},

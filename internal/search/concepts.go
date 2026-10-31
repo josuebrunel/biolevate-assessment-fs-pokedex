@@ -3,6 +3,7 @@ package search
 import (
 	"context"
 	"slices"
+	"strings"
 
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
 )
@@ -13,6 +14,11 @@ type Expansion struct {
 	Terms    []string
 	Concepts []string
 	Types    []string // types the matched concepts favour, for strategy queries
+	Pokemon  []string // Pokémon the matched concepts stand for ("starter")
+	// Consumed are the alias words of collection concepts. They name a group
+	// rather than something to look up, so searching names or text for "starter"
+	// would only find noise.
+	Consumed []string
 }
 
 // ConceptReader loads the concept set; satisfied by *store.Store.
@@ -48,18 +54,28 @@ func LoadConceptMap(ctx context.Context, r ConceptReader) (*ConceptMap, error) {
 	return NewConceptMap(concepts), nil
 }
 
-// Expand returns the terms and concept labels for every token that is an alias,
-// without duplicates and in order of first appearance. It reads the parser's
-// full token list, not only the leftover terms, so "poison" still expands
-// although the parser also reads it as a type. Tokens are expected lowercase, as
-// Parse produces them.
+// maxAliasWords is the longest alias, in words, that Expand looks for.
+const maxAliasWords = 4
+
+// Expand returns the terms and concept labels for every alias found in the
+// tokens, without duplicates and in order of first appearance. An alias may be
+// several words ("one hit knock out"): every run of up to maxAliasWords
+// consecutive tokens is tried. It reads the parser's full token list, not only
+// the leftover terms, so "poison" still expands although the parser also reads
+// it as a type. Tokens are expected lowercase, as Parse produces them.
 func (m *ConceptMap) Expand(tokens []string) Expansion {
 	var ex Expansion
-	for _, tok := range tokens {
-		for _, c := range m.byAlias[tok] {
-			ex.Concepts = appendMissing(ex.Concepts, c.Label)
-			ex.Terms = appendMissing(ex.Terms, c.Terms...)
-			ex.Types = appendMissing(ex.Types, c.Types...)
+	for i := range tokens {
+		for n := 1; n <= maxAliasWords && i+n <= len(tokens); n++ {
+			for _, c := range m.byAlias[strings.Join(tokens[i:i+n], " ")] {
+				ex.Concepts = appendMissing(ex.Concepts, c.Label)
+				ex.Terms = appendMissing(ex.Terms, c.Terms...)
+				ex.Types = appendMissing(ex.Types, c.Types...)
+				ex.Pokemon = appendMissing(ex.Pokemon, c.Pokemon...)
+				if len(c.Pokemon) > 0 && len(c.Terms) == 0 {
+					ex.Consumed = appendMissing(ex.Consumed, strings.Fields(strings.Join(tokens[i:i+n], " "))...)
+				}
+			}
 		}
 	}
 	return ex

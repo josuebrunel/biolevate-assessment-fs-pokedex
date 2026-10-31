@@ -164,6 +164,13 @@ templ PokemonCard(it search.Item, sorted store.Stat) {
 					<span class="meta" style="margin-left:4px">BST { count(it.Pokemon.Stats.Total()) }</span>
 				</div>
 				@Evidence(it.Evidence)
+				if len(it.Reasons) > 0 {
+					<div class="why">
+						for _, r := range it.Reasons {
+							<span>{ r }</span>
+						}
+					</div>
+				}
 				@Stats(cardStats(*it.Pokemon, sorted))
 				<label class="pick"><input type="checkbox" name="p" value={ it.Name } form="compare-form"/> Add to compare</label>
 			</div>

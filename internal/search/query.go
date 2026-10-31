@@ -4,6 +4,7 @@ package search
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
 )
@@ -19,6 +20,8 @@ type Query struct {
 	Types     []string     // type filters, in order of appearance
 	Sort      store.Stat   // requested sort, empty when none
 	Ascending bool         // direction for Sort
+	Legendary bool         // only legendary and mythical Pokémon
+	Effect    bool         // asks for a stat change ("raise defense"): text is searched, names are not
 	Kinds     []store.Kind // entity kinds the user named, empty means any
 	Limit     int          // from "top N", zero when unset
 	Strategy  bool         // "team", "strategy": an exploratory, multi-entity question
@@ -31,6 +34,12 @@ func (q Query) Interpretation() []string {
 	var out []string
 	for _, t := range q.Types {
 		out = append(out, "type: "+t)
+	}
+	if q.Legendary {
+		out = append(out, "legendary")
+	}
+	if q.Effect {
+		out = append(out, "effect: "+strings.Join(q.Terms, " "))
 	}
 	if q.Sort != "" {
 		dir := "highest"

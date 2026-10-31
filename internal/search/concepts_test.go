@@ -54,3 +54,38 @@ func TestConceptMapAliasSharedByTwoConcepts(t *testing.T) {
 		t.Errorf("got %+v, want %+v", got, want)
 	}
 }
+
+func TestConceptMapMultiWordAliasAndCollections(t *testing.T) {
+	m := NewConceptMap([]store.Concept{
+		{Key: "ohko", Label: "One-hit KO", Aliases: []string{"ohko", "one hit knock out"}, Terms: []string{"one-hit ko"}},
+		{Key: "starter", Label: "Starter", Aliases: []string{"starter"}, Pokemon: []string{"bulbasaur", "charmander"}},
+	})
+
+	t.Run("an alias of several words matches a run of tokens", func(t *testing.T) {
+		got := m.Expand([]string{"one", "hit", "knock", "out"})
+		if want := []string{"One-hit KO"}; !reflect.DeepEqual(got.Concepts, want) {
+			t.Errorf("concepts = %v, want %v", got.Concepts, want)
+		}
+	})
+	t.Run("a partial run does not match", func(t *testing.T) {
+		if got := m.Expand([]string{"one", "hit", "wonder"}); len(got.Concepts) != 0 {
+			t.Errorf("matched %v", got.Concepts)
+		}
+	})
+	t.Run("the run may sit inside a longer query", func(t *testing.T) {
+		if got := m.Expand([]string{"move", "one", "hit", "knock", "out", "fast"}); len(got.Concepts) != 1 {
+			t.Errorf("concepts = %v", got.Concepts)
+		}
+	})
+	t.Run("a collection carries its Pokémon and consumes its alias", func(t *testing.T) {
+		got := m.Expand([]string{"fire", "starter"})
+		if !reflect.DeepEqual(got.Pokemon, []string{"bulbasaur", "charmander"}) || !reflect.DeepEqual(got.Consumed, []string{"starter"}) {
+			t.Errorf("got %+v", got)
+		}
+	})
+	t.Run("a concept with terms consumes nothing", func(t *testing.T) {
+		if got := m.Expand([]string{"ohko"}); len(got.Consumed) != 0 {
+			t.Errorf("consumed %v", got.Consumed)
+		}
+	})
+}

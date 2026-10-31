@@ -31,9 +31,19 @@ var statWords = map[string]statIntent{
 	"bulky": {store.StatHP, false}, "tanky": {store.StatHP, false}, "durable": {store.StatHP, false},
 	"hp": {store.StatHP, false},
 
+	// Size words are limited to superlatives and comparatives: "light" and
+	// "short" are also move names ("light screen"), and "big" is ambiguous.
+	"heavy": {store.StatWeight, false}, "heavier": {store.StatWeight, false}, "heaviest": {store.StatWeight, false},
+	"lightest": {store.StatWeight, true}, "lighter": {store.StatWeight, true},
+	"tall": {store.StatHeight, false}, "taller": {store.StatHeight, false}, "tallest": {store.StatHeight, false},
+	"shortest": {store.StatHeight, true}, "shorter": {store.StatHeight, true},
+
 	"best": {store.StatTotal, false}, "overall": {store.StatTotal, false},
 	"weak": {store.StatTotal, true}, "weakest": {store.StatTotal, true},
 }
+
+// legendaryWords select legendary and mythical Pokémon.
+var legendaryWords = map[string]bool{"legendary": true, "legendaries": true, "mythical": true, "mythic": true}
 
 var kindWords = map[string]store.Kind{
 	"pokemon": store.KindPokemon, "mon": store.KindPokemon, "mons": store.KindPokemon,
@@ -56,4 +66,19 @@ var stopwords = map[string]bool{
 	"get": true, "way": true, "ways": true, "use": true, "type": true, "types": true, "top": true,
 	"compare": true, "vs": true, "versus": true,
 	"put": true, "make": true, "cause": true, "causes": true, "opponent": true, "enemy": true, "foe": true,
+}
+
+// statNouns are stat words that name the stat itself, as in "raise defense",
+// as well as expressing a sort ("defense" alone sorts by it). After an effect
+// verb they describe a move's effect instead, so they become search terms.
+var statNouns = map[string]bool{
+	"attack": true, "defense": true, "defence": true, "speed": true, "hp": true,
+}
+
+// effectVerbs introduce a change to a stat: "raise defense", "lower attack".
+var effectVerbs = map[string]bool{
+	"raise": true, "raises": true, "raised": true, "lower": true, "lowers": true, "lowered": true,
+	"boost": true, "boosts": true, "boosted": true, "increase": true, "increases": true,
+	"decrease": true, "decreases": true, "drop": true, "drops": true, "reduce": true, "reduces": true,
+	"buff": true, "debuff": true,
 }

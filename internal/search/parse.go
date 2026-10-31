@@ -34,9 +34,16 @@ func Parse(raw string) Query {
 		if stopwords[w] {
 			continue
 		}
+		prev := ""
+		if len(q.Tokens) > 0 {
+			prev = q.Tokens[len(q.Tokens)-1]
+		}
 		q.Tokens = append(q.Tokens, w)
 
 		switch {
+		case statNouns[w] && effectVerbs[prev]:
+			q.Terms = append(q.Terms, w) // "raise defense" asks for an effect, not a sort
+			q.Effect = true
 		case isType(w):
 			if t := strings.TrimSuffix(w, "-type"); !slices.Contains(q.Types, t) {
 				q.Types = append(q.Types, t)
@@ -45,6 +52,8 @@ func Parse(raw string) Query {
 			if q.Sort == "" { // first stat word wins
 				q.Sort, q.Ascending = statWords[w].stat, statWords[w].ascending
 			}
+		case legendaryWords[w]:
+			q.Legendary = true
 		case kindWords[w] != "":
 			if k := kindWords[w]; !slices.Contains(q.Kinds, k) {
 				q.Kinds = append(q.Kinds, k)

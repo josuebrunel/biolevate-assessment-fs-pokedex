@@ -22,6 +22,7 @@ type Reader interface {
 	NameSearch(ctx context.Context, kind store.Kind, q string, limit int) ([]store.Hit, error)
 	TextSearch(ctx context.Context, kind store.Kind, terms []string, limit int) ([]store.Hit, error)
 	PokemonList(ctx context.Context, p store.PokemonListParams) ([]store.Pokemon, error)
+	PokemonGetByNames(ctx context.Context, names []string) ([]store.Pokemon, error)
 	MoveList(ctx context.Context, p store.MoveListParams) ([]store.Move, error)
 }
 
@@ -88,11 +89,19 @@ func (l *Lexical) Retrieve(ctx context.Context, q Query, limit int) ([]Result, e
 	}
 
 	var lists []ranked
-	names, err := l.nameLists(ctx, q, kinds, fetch)
-	if err != nil {
-		return nil, err
+	// Words that name a collection ("starter") are not searched for in names or text.
+	if l.expand != nil {
+		if ex := l.expand(q.Tokens); len(ex.Consumed) > 0 {
+			q.Terms = slices.DeleteFunc(slices.Clone(q.Terms), func(t string) bool { return slices.Contains(ex.Consumed, t) })
+		}
 	}
-	lists = append(lists, names...)
+	if !q.Effect { // "raise attack" must not match the name "sky-attack"
+		names, err := l.nameLists(ctx, q, kinds, fetch)
+		if err != nil {
+			return nil, err
+		}
+		lists = append(lists, names...)
+	}
 
 	textLists, err := l.textLists(ctx, q, kinds, fetch)
 	if err != nil {
@@ -106,10 +115,7 @@ func (l *Lexical) Retrieve(ctx context.Context, q Query, limit int) ([]Result, e
 	}
 	lists = append(lists, criteria...)
 
-	results := fuse(lists...)
-	if len(results) > limit {
-		results = results[:limit]
-	}
+	results := capResults(fuse(lists...), limit, q.Limit > 0)
 	slog.DebugContext(ctx, "search completed",
 		"query", q.Raw, "interpretation", q.Interpretation(),
 		"sources", len(lists), "results", len(results), "duration", time.Since(start))
@@ -145,6 +151,8 @@ func (l *Lexical) nameLists(ctx context.Context, q Query, kinds []store.Kind, fe
 				reason = "name matches"
 			case h.Score >= 1:
 				reason = fmt.Sprintf("name starts with %q", phrase)
+			case strings.Contains(h.Name, exact):
+				reason = fmt.Sprintf("name contains %q", phrase)
 			}
 			all = append(all, scored{candidate{kind, h.ID, h.Name, reason}, h.Score})
 		}
@@ -207,7 +215,11 @@ func (l *Lexical) textLists(ctx context.Context, q Query, kinds []store.Kind, fe
 // criteriaLists applies type filters and stat sorts. Type-only queries rank by
 // base stat total so "electric" shows the strongest Electric Pokémon first.
 func (l *Lexical) criteriaLists(ctx context.Context, q Query, kinds []store.Kind, fetch int) ([]ranked, error) {
-	if len(q.Types) == 0 && q.Sort == "" {
+	var collection Expansion
+	if l.expand != nil {
+		collection = l.expand(q.Tokens)
+	}
+	if len(q.Types) == 0 && q.Sort == "" && !q.Legendary && len(collection.Pokemon) == 0 {
 		return nil, nil
 	}
 	var lists []ranked
@@ -217,19 +229,31 @@ func (l *Lexical) criteriaLists(ctx context.Context, q Query, kinds []store.Kind
 		if sortBy == "" {
 			sortBy = store.StatTotal
 		}
-		pokemon, err := l.reader.PokemonList(ctx, store.PokemonListParams{
-			Types: q.Types, SortBy: sortBy, Ascending: q.Ascending, Limit: fetch,
-		})
+		var pokemon []store.Pokemon
+		var err error
+		if len(collection.Pokemon) > 0 {
+			pokemon, err = l.collection(ctx, q, collection.Pokemon, sortBy)
+		} else {
+			pokemon, err = l.reader.PokemonList(ctx, store.PokemonListParams{
+				Types: q.Types, Legendary: q.Legendary, SortBy: sortBy, Ascending: q.Ascending, Limit: fetch,
+			})
+		}
 		if err != nil {
 			return nil, err
 		}
 		lists = append(lists, ranked{weightCriteria, candidatesOf(pokemon, func(p store.Pokemon) candidate {
-			reasons := make([]string, 0, len(q.Types)+1)
+			reasons := make([]string, 0, len(q.Types)+2)
+			if len(collection.Pokemon) > 0 {
+				reasons = append(reasons, "concept: "+strings.Join(collection.Concepts, ", "))
+			}
 			for _, t := range q.Types {
 				reasons = append(reasons, "type: "+t)
 			}
+			if q.Legendary {
+				reasons = append(reasons, "legendary")
+			}
 			if q.Sort != "" {
-				reasons = append(reasons, fmt.Sprintf("%s: %d", q.Sort, statValue(p.Stats, q.Sort)))
+				reasons = append(reasons, sortReason(p, q.Sort))
 			}
 			return candidate{store.KindPokemon, p.ID, p.Name, strings.Join(reasons, ", ")}
 		})})
@@ -248,6 +272,33 @@ func (l *Lexical) criteriaLists(ctx context.Context, q Query, kinds []store.Kind
 	return nonEmpty(lists...), nil
 }
 
+// collection resolves the Pokémon a concept stands for ("starter"), keeps the
+// ones that satisfy the query's type and legendary filters, and orders them by
+// the requested stat. The sets are a handful of names, so this is done in Go
+// after one indexed lookup by name.
+func (l *Lexical) collection(ctx context.Context, q Query, names []string, sortBy store.Stat) ([]store.Pokemon, error) {
+	pokemon, err := l.reader.PokemonGetByNames(ctx, names)
+	if err != nil {
+		return nil, err
+	}
+	pokemon = slices.DeleteFunc(pokemon, func(p store.Pokemon) bool {
+		for _, t := range q.Types {
+			if !slices.Contains(p.Types, t) {
+				return true
+			}
+		}
+		return q.Legendary && !p.IsLegendary && !p.IsMythical
+	})
+	slices.SortStableFunc(pokemon, func(a, b store.Pokemon) int {
+		d := pokemonStat(b, sortBy) - pokemonStat(a, sortBy)
+		if q.Ascending {
+			d = -d
+		}
+		return d
+	})
+	return pokemon, nil
+}
+
 func longEnough(terms []string) []string {
 	var out []string
 	for _, t := range terms {
@@ -256,6 +307,39 @@ func longEnough(terms []string) []string {
 		}
 	}
 	return out
+}
+
+// sortReason says how a Pokémon scored on the requested sort, in the unit a
+// person reads: metres and kilograms for size, the plain number for a stat.
+func sortReason(p store.Pokemon, stat store.Stat) string {
+	switch stat {
+	case store.StatHeight:
+		if p.HeightDecimetres != nil {
+			return fmt.Sprintf("height: %.1f m", float64(*p.HeightDecimetres)/10)
+		}
+	case store.StatWeight:
+		if p.WeightHectograms != nil {
+			return fmt.Sprintf("weight: %.1f kg", float64(*p.WeightHectograms)/10)
+		}
+	}
+	return fmt.Sprintf("%s: %d", stat, statValue(p.Stats, stat))
+}
+
+// pokemonStat is the value a Pokémon is sorted by; missing sizes sort last.
+func pokemonStat(p store.Pokemon, stat store.Stat) int {
+	switch stat {
+	case store.StatHeight:
+		if p.HeightDecimetres != nil {
+			return *p.HeightDecimetres
+		}
+		return 0
+	case store.StatWeight:
+		if p.WeightHectograms != nil {
+			return *p.WeightHectograms
+		}
+		return 0
+	}
+	return statValue(p.Stats, stat)
 }
 
 func statValue(s store.Stats, stat store.Stat) int {
@@ -276,4 +360,25 @@ func statValue(s store.Stats, stat store.Stat) int {
 		return s.Total()
 	}
 	return 0
+}
+
+// capResults trims fused results to limit. An explicit "top N" caps the whole
+// list. Otherwise the cap applies per kind, so a long list of one kind (the 33
+// Poison-type Pokémon for "poison") cannot push every move out of the response.
+func capResults(results []Result, limit int, overall bool) []Result {
+	if overall {
+		if len(results) > limit {
+			return results[:limit]
+		}
+		return results
+	}
+	seen := map[store.Kind]int{}
+	out := results[:0:0]
+	for _, r := range results {
+		if seen[r.Kind] < limit {
+			seen[r.Kind]++
+			out = append(out, r)
+		}
+	}
+	return out
 }

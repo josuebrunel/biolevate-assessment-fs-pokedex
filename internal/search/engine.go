@@ -103,7 +103,14 @@ func (e *Engine) Search(ctx context.Context, input string, opts Options) (Respon
 		resp.Concepts = ex.Concepts
 	}
 
-	results, err := e.retriever.Retrieve(ctx, q, max(minFetch, perGroup*3))
+	// "pokemon with levitate" wants Pokémon, but the answer is found through the
+	// ability it names. Retrieve across every kind so moves and abilities can
+	// seed the graph, then show only the kinds the user asked for.
+	rq, shown := q, q.Kinds
+	if len(q.Kinds) > 0 && !slices.Contains(q.Kinds, store.KindMove) && !slices.Contains(q.Kinds, store.KindAbility) {
+		rq.Kinds = nil
+	}
+	results, err := e.retriever.Retrieve(ctx, rq, max(minFetch, perGroup*3))
 	if err != nil {
 		return Response{}, fmt.Errorf("retrieve: %w", err)
 	}
@@ -118,6 +125,9 @@ func (e *Engine) Search(ctx context.Context, input string, opts Options) (Respon
 	resp.Groups, err = e.groups(ctx, q, ex, results, candidates, perGroup)
 	if err != nil {
 		return Response{}, err
+	}
+	if len(shown) > 0 {
+		resp.Groups = slices.DeleteFunc(resp.Groups, func(g Group) bool { return !slices.Contains(shown, g.Kind) })
 	}
 
 	slog.DebugContext(ctx, "engine answered", "query", input, "groups", len(resp.Groups),

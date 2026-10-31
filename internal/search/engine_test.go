@@ -171,6 +171,36 @@ func TestEngine(t *testing.T) {
 		}
 	})
 
+	t.Run("a named ability leads to the Pokémon that have it", func(t *testing.T) {
+		resp := searchFor(t, "pokemon with levitate", search.Options{PerGroup: 10})
+		if len(resp.Groups) != 1 || resp.Groups[0].Kind != store.KindPokemon {
+			t.Fatalf("only Pokémon were asked for: %+v", resp.Groups)
+		}
+		gastly := item(t, resp.Groups[0], "gastly")
+		if ev := evidenceStrings(gastly); len(ev) == 0 || !strings.Contains(ev[0], "has ability Levitate") {
+			t.Errorf("gastly evidence = %v", ev)
+		}
+	})
+
+	t.Run("a named move leads to the Pokémon that learn it", func(t *testing.T) {
+		resp := searchFor(t, "which pokemon can learn thunder", search.Options{PerGroup: 10})
+		if len(resp.Groups) != 1 {
+			t.Fatalf("groups = %+v", resp.Groups)
+		}
+		item(t, resp.Groups[0], "pikachu")
+		item(t, resp.Groups[0], "raichu")
+	})
+
+	t.Run("a collection word narrows by type", func(t *testing.T) {
+		resp := searchFor(t, "fire starter", search.Options{PerGroup: 10})
+		if len(resp.Groups) != 1 || len(resp.Groups[0].Items) != 1 || resp.Groups[0].Items[0].Name != "charmander" {
+			t.Fatalf("fire starter = %+v", resp.Groups)
+		}
+		if got := resp.Groups[0].Items[0].Reasons; len(got) == 0 || !strings.Contains(got[0], "Starter") {
+			t.Errorf("reasons = %v", got)
+		}
+	})
+
 	t.Run("per-group limit", func(t *testing.T) {
 		resp := searchFor(t, "put opponent to sleep", search.Options{PerGroup: 3})
 		for _, g := range resp.Groups {
