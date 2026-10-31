@@ -23,7 +23,7 @@ templ ErrorBody(e ErrorView) {
 		<p class="note">Error { strconv.Itoa(e.Status) }</p>
 		<h1>{ e.Message }</h1>
 		<p class="note">Try again, or go back to the search. If it keeps happening, quote the request ID below.</p>
-		<a class="btn" href="/">Back to search</a>
+		<a class="btn" href="/">@Icon("search") Back to search</a>
 		if e.RequestID != "" {
 			<p class="rid">Request ID: { e.RequestID }</p>
 		}

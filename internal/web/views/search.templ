@@ -11,14 +11,15 @@ type Scenario struct {
 	Title string
 	Blurb string
 	Query string
+	Icon  string
 }
 
 // Scenarios are the four questions the engine is built to answer.
 var Scenarios = []Scenario{
-	{"01", "Recover something partially remembered", "A new trainer saw a Pokémon starting with “bulba”.", "bulba"},
-	{"02", "Find and compare candidates", "One team slot left. Fastest Electric types first, ready to compare.", "fast electric"},
-	{"03", "Discover an answer without the vocabulary", "Moves that cause sleep, then the Pokémon that can use them.", "put opponent to sleep"},
-	{"04", "Explore a strategy across categories", "Abilities, moves and Pokémon that work with rain, in one view.", "rain team"},
+	{"01", "Recover something partially remembered", "A new trainer saw a Pokémon starting with “bulba”.", "bulba", "partial"},
+	{"02", "Find and compare candidates", "One team slot left. Fastest Electric types first, ready to compare.", "fast electric", "bolt"},
+	{"03", "Discover an answer without the vocabulary", "Moves that cause sleep, then the Pokémon that can use them.", "put opponent to sleep", "moon-z"},
+	{"04", "Explore a strategy across categories", "Abilities, moves and Pokémon that work with rain, in one view.", "rain team", "rain"},
 }
 
 // SearchPage is the home page: the search box, and below it either the example
@@ -33,7 +34,7 @@ templ SearchForm(query string) {
 		<label class="visually-hidden" for="q">Search the Pokédex</label>
 		<div class="field">
 			<input id="q" name="q" type="search" value={ query } maxlength="200" autocomplete="off" enterkeyhint="search" placeholder="A name, a need or a plan"/>
-			<button class="btn" type="submit">Search</button>
+			<button class="btn" type="submit">@Icon("search") Search</button>
 		</div>
 	</form>
 }
@@ -69,6 +70,7 @@ templ ScenarioList() {
 		<div class="quests">
 			for _, s := range Scenarios {
 				<a class="quest" href={ templ.SafeURL("/?q=" + queryEscape(s.Query)) }>
+					<span class="quest-ico">@Icon(s.Icon)</span>
 					<span class="tag">Quest { s.N }</span>
 					<h3>{ s.Title }</h3>
 					<p>{ s.Blurb }</p>
@@ -178,8 +180,8 @@ templ PokemonCard(it search.Item, sorted store.Stat) {
 			@Stats(cardStats(*it.Pokemon, sorted))
 			<label class="pick">
 				<input type="checkbox" name="p" value={ it.Name } data-dex={ dex(*it.Pokemon) } form="compare-form"/>
-				<span class="off">Add to party</span>
-				<span class="on">In your party</span>
+				<span class="off">@Icon("plus") Add to party</span>
+				<span class="on">@Icon("check") In your party</span>
 			</label>
 		</article>
 	}
@@ -252,7 +254,7 @@ templ Tray() {
 			</div>
 			<p id="tray-text" aria-live="polite">Add two or three Pokémon to battle them</p>
 			<form id="compare-form" action="/compare" method="get">
-				<button class="btn" id="tray-go" type="submit">Battle</button>
+				<button class="btn" id="tray-go" type="submit">@Icon("battle") Battle</button>
 			</form>
 		</div>
 	</div>
