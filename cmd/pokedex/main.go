@@ -47,7 +47,7 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 		return db.Migrate(ctx, conn, db.MigrateAction(*migrate))
 	}
 
