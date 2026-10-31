@@ -218,7 +218,7 @@ Also works: `chu`, `legendary fire`, `heaviest`, `pokemon with levitate`, `water
 
 | Check | What it proves |
 |---|---|
-| **Golden suite** (83 queries) | Expected results within the expected rank; recall and MRR per category. **Written by the engine's author, so it guards regressions; it is not an independent benchmark.** |
+| **Golden suite** (88 queries) | Expected results within the expected rank; recall and MRR per category. **Written by the engine's author, so it guards regressions; it is not an independent benchmark.** |
 | **Index guard** | Every query's plan is checked; **one that would scan a table fails the test**. |
 | **Query-count test** | The same number of queries for 2 or 40 results (**no N+1**). |
 | **Real-Postgres and end-to-end tests** | Store, importer, migrations, web layer and the four situations, through HTTP and the templates. |
@@ -239,6 +239,7 @@ Also works: `chu`, `legendary fire`, `heaviest`, `pokemon with levitate`, `water
 
 - **Matchups** (`how to beat gyarados`) and **evolutions** are not answered: the data has no type chart or evolution order (it has a family id, unused so far).
 - **Paraphrases outside the concept map** fall back to word matching. **Negation** works for types and stat words (`not electric`, `not fast`); anything else is reported as ignored.
+- **English only.** Accents are fine (`pikachú`) and French type names work (`feu`, `électrique`), but names, moves and effects are searched in English, and other scripts (`火`) get a note instead of results.
 - **Cards confirm a Pokémon with genus, types and stats**, but show no species description or image, and there is no detail page.
 - **The hardening** (rate limiting, CSP, timeouts) goes beyond the brief on purpose and is not needed to judge the search.
 
