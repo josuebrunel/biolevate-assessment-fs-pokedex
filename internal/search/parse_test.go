@@ -51,6 +51,12 @@ func TestParse(t *testing.T) {
 			Query{Types: []string{"water"}, Notes: []string{"This Pokédex only has generation 1, so “gen 3” was ignored."}}},
 		{"a single letter is too short", "e", Query{Terms: []string{"e"}, TooShort: true, Notes: []string{"Type at least two letters to search."}}},
 		{"a bare kind word asks for more", "pokemon", Query{Kinds: []store.Kind{store.KindPokemon}, Notes: []string{"Add a name, a type, a stat or an effect to narrow down the Pokémon."}}},
+		{"accents fold to plain letters", "PIKACHÚ Mr. Mimé", Query{Terms: []string{"pikachu", "mr", "mime"}}},
+		{"french type names", "pokémon électrique", Query{Types: []string{"electric"}, Kinds: []store.Kind{store.KindPokemon}}},
+		{"non-latin text is reported and dropped", "火 water",
+			Query{Types: []string{"water"}, Notes: []string{"This Pokédex is English only, so “火” could not be searched. Accents are fine, and French type names (feu, eau, électrique) work."}}},
+		{"nothing searchable", "🔥",
+			Query{Notes: []string{"There was nothing to search for: use letters and digits."}}},
 		{"but is not a word to search", "water but fast", Query{Types: []string{"water"}, Sort: store.StatSpeed}},
 		{"bulky", "tanky normal", Query{Types: []string{"normal"}, Sort: store.StatHP}},
 		{"weakest", "weakest", Query{Sort: store.StatTotal, Ascending: true}},
@@ -93,7 +99,7 @@ func TestParse(t *testing.T) {
 		{"hyphenated names stay whole", "sleep-powder", Query{Terms: []string{"sleep-powder"}}},
 		{"empty", "", Query{}},
 		{"only stopwords", "the of to", Query{}},
-		{"only punctuation", "?!...", Query{}},
+		{"only punctuation", "?!...", Query{Notes: []string{"There was nothing to search for: use letters and digits."}}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

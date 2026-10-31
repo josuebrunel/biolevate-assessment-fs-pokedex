@@ -1402,5 +1402,67 @@
   "category": "odd input",
   "query": "pokemon",
   "expect_empty": true
+ },
+ {
+  "name": "accented name",
+  "category": "odd input",
+  "query": "pikachú",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "pikachu",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "french type name",
+  "category": "odd input",
+  "query": "pokémon électrique",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "zapdos",
+    "within": 1
+   }
+  ],
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "charizard",
+    "within": 50
+   }
+  ]
+ },
+ {
+  "name": "french type, shouted",
+  "category": "odd input",
+  "query": "FEU",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "charizard",
+    "within": 3
+   }
+  ],
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "jolteon",
+    "within": 50
+   }
+  ]
+ },
+ {
+  "name": "non-latin script",
+  "category": "odd input",
+  "query": "火",
+  "expect_empty": true
+ },
+ {
+  "name": "emoji",
+  "category": "odd input",
+  "query": "🔥",
+  "expect_empty": true
  }
 ]

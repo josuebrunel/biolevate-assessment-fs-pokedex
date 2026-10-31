@@ -11,7 +11,16 @@ import (
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
 )
 
-var accentFolder = strings.NewReplacer("é", "e", "è", "e", "ê", "e", "ï", "i", "’", "'")
+// accentFolder maps the Latin diacritics a user may type (or paste) to plain
+// ASCII, because every name in the data is plain ASCII. It runs after lowercasing.
+var accentFolder = strings.NewReplacer(
+	"à", "a", "á", "a", "â", "a", "ã", "a", "ä", "a", "å", "a", "æ", "ae",
+	"ç", "c", "è", "e", "é", "e", "ê", "e", "ë", "e",
+	"ì", "i", "í", "i", "î", "i", "ï", "i", "ñ", "n",
+	"ò", "o", "ó", "o", "ô", "o", "õ", "o", "ö", "o", "ø", "o", "œ", "oe",
+	"ù", "u", "ú", "u", "û", "u", "ü", "u", "ý", "y", "ÿ", "y", "ß", "ss",
+	"’", "'", "‘", "'",
+)
 
 // maxLimit caps "top N" so a typo cannot ask for the whole table.
 const maxLimit = 50
@@ -20,6 +29,12 @@ const maxLimit = 50
 func Parse(raw string) Query {
 	q := Query{Raw: raw}
 	words := tokenize(raw)
+	words, foreign := splitForeign(words)
+	if len(foreign) > 0 {
+		q.Notes = append(q.Notes, fmt.Sprintf("This Pokédex is English only, so %s could not be searched. Accents are fine, and French type names (feu, eau, électrique) work.", quoteAll(foreign)))
+	} else if len(words) == 0 && strings.TrimSpace(raw) != "" {
+		q.Notes = append(q.Notes, "There was nothing to search for: use letters and digits.")
+	}
 
 	words, q.Versus = splitVersus(words)
 
@@ -52,6 +67,9 @@ func Parse(raw string) Query {
 			}
 		}
 
+		if en, ok := frenchTypes[w]; ok {
+			w = en
+		}
 		if stopwords[w] {
 			continue
 		}
@@ -182,4 +200,25 @@ func contentWords(words []string) []string {
 		}
 	}
 	return out
+}
+
+// splitForeign separates words written in a script other than Latin ("火",
+// "シャワーズ"), which nothing in the data can match, from the rest.
+func splitForeign(words []string) (kept, foreign []string) {
+	for _, w := range words {
+		if slices.ContainsFunc([]rune(w), func(r rune) bool { return unicode.IsLetter(r) && !unicode.Is(unicode.Latin, r) }) {
+			foreign = append(foreign, w)
+			continue
+		}
+		kept = append(kept, w)
+	}
+	return kept, foreign
+}
+
+func quoteAll(words []string) string {
+	q := make([]string, len(words))
+	for i, w := range words {
+		q[i] = "“" + w + "”"
+	}
+	return strings.Join(q, ", ")
 }

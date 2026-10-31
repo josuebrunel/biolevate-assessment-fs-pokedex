@@ -94,3 +94,12 @@ var colourWords = map[string]string{
 
 // generationWords introduce a generation number ("gen 1"). The whole dataset is generation 1.
 var generationWords = map[string]bool{"gen": true, "generation": true}
+
+// frenchTypes lets the type names in French (accents folded) read as types.
+// Names, moves and effects stay English, since the data has no translations.
+var frenchTypes = map[string]string{
+	"electrique": "electric", "feu": "fire", "eau": "water", "plante": "grass", "glace": "ice",
+	"sol": "ground", "roche": "rock", "vol": "flying", "psy": "psychic", "psychique": "psychic",
+	"insecte": "bug", "spectre": "ghost", "combat": "fighting", "acier": "steel", "tenebres": "dark",
+	"fee": "fairy", "normal": "normal",
+}
