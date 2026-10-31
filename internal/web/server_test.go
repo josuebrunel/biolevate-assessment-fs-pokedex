@@ -24,7 +24,7 @@ func newTestServer(t *testing.T, level string) (*echo.Echo, *bytes.Buffer) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	e, err := NewServer(log)
+	e, err := NewServer(log, Deps{})
 	if err != nil {
 		t.Fatal(err)
 	}

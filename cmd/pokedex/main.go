@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"flag"
 	"fmt"
@@ -17,6 +18,8 @@ import (
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/db"
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/importer"
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/logging"
+	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/search"
+	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/web"
 )
 
@@ -51,7 +54,13 @@ func run() error {
 		return runCommands(ctx, cfg.DatabaseURL, db.MigrateAction(*migrate), *importData)
 	}
 
-	handler, err := web.NewServer(logger)
+	conn, err := db.Open(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = conn.Close() }()
+
+	handler, err := newHandler(ctx, logger, conn)
 	if err != nil {
 		return err
 	}
@@ -85,6 +94,18 @@ func run() error {
 	}
 	slog.Info("server stopped")
 	return nil
+}
+
+// newHandler wires the search engine over the database and builds the web server.
+// The concept map is read once here and shared by every request.
+func newHandler(ctx context.Context, logger *slog.Logger, conn *sql.DB) (http.Handler, error) {
+	s := store.NewFromSQL(conn)
+	concepts, err := search.LoadConceptMap(ctx, s)
+	if err != nil {
+		return nil, fmt.Errorf("load concept map: %w", err)
+	}
+	engine := search.NewEngine(search.NewLexical(s, search.WithExpander(concepts.Expand)), s, concepts)
+	return web.NewServer(logger, web.Deps{Search: engine, Pokedex: s, Ping: conn.PingContext})
 }
 
 // runCommands runs the one-shot database commands: migrate first, then import.

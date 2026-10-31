@@ -60,3 +60,23 @@ func accessLog(log *slog.Logger) (echo.MiddlewareFunc, error) {
 		},
 	}.ToMiddleware()
 }
+
+// securityHeaders sets a strict Content-Security-Policy and the usual
+// hardening headers. Scripts and styles come from this origin only; fonts are
+// the one external resource and are optional, since the stylesheet falls back
+// to system fonts offline. Inline style attributes are allowed (and only those:
+// style-src-attr) because stat bars set their width that way.
+func securityHeaders() echo.MiddlewareFunc {
+	const csp = "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; " +
+		"font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; " +
+		"base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c *echo.Context) error {
+			h := c.Response().Header()
+			h.Set("Content-Security-Policy", csp)
+			h.Set("X-Content-Type-Options", "nosniff")
+			h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+			return next(c)
+		}
+	}
+}

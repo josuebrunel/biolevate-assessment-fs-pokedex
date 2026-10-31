@@ -4,10 +4,12 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo/v5"
 
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/logging"
+	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/web/views"
 )
 
 // errorHandler is the single place errors become responses and log lines.
@@ -15,7 +17,7 @@ import (
 // anything else is reported as the generic status text, so internals never
 // reach the client, and the underlying error is logged once here with the
 // request ID the client also receives.
-func errorHandler(log *slog.Logger) echo.HTTPErrorHandler {
+func errorHandler(log *slog.Logger, assets string) echo.HTTPErrorHandler {
 	return func(c *echo.Context, err error) {
 		if r, _ := echo.UnwrapResponse(c.Response()); r != nil && r.Committed {
 			return
@@ -45,18 +47,41 @@ func errorHandler(log *slog.Logger) echo.HTTPErrorHandler {
 			slog.Any("err", err),
 		)
 
-		body := map[string]string{"message": message}
-		if id := logging.RequestID(ctx); id != "" {
-			body["request_id"] = id
-		}
+		id := logging.RequestID(ctx)
 		var sendErr error
-		if c.Request().Method == http.MethodHead {
+		switch {
+		case c.Request().Method == http.MethodHead:
 			sendErr = c.NoContent(code)
-		} else {
+		case wantsHTML(c):
+			sendErr = sendHTMLError(c, code, views.ErrorView{Status: code, Message: message, RequestID: id}, assets)
+		default:
+			body := map[string]string{"message": message}
+			if id != "" {
+				body["request_id"] = id
+			}
 			sendErr = c.JSON(code, body)
 		}
 		if sendErr != nil {
 			log.WarnContext(ctx, "could not send error response", "err", sendErr)
 		}
 	}
+}
+
+// wantsHTML reports whether the client is a browser or htmx rather than an API
+// client, so it gets a page instead of JSON.
+func wantsHTML(c *echo.Context) bool {
+	return c.Request().Header.Get("HX-Request") == "true" ||
+		strings.Contains(c.Request().Header.Get("Accept"), "text/html")
+}
+
+// sendHTMLError renders the error page, or only its body for live-search
+// requests, which are retargeted so the message appears where results would.
+func sendHTMLError(c *echo.Context, code int, e views.ErrorView, assets string) error {
+	if isHTMX(c) {
+		c.Response().Header().Set("HX-Retarget", "#content")
+		c.Response().Header().Set("HX-Reswap", "innerHTML")
+		return render(c, code, views.ErrorBody(e))
+	}
+	meta := views.Meta{Title: e.Message + " · Chen Lab Pokédex", Description: e.Message, NoIndex: true, Assets: assets}
+	return render(c, code, views.ErrorPage(meta, e))
 }

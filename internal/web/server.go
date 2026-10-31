@@ -2,32 +2,63 @@
 package web
 
 import (
+	"context"
 	"log/slog"
-	"net/http"
 
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
+
+	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/search"
+	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
 )
 
-const healthPath = "/healthz"
+const (
+	healthPath = "/healthz"
+	readyPath  = "/readyz"
+)
+
+// Searcher answers a free-text query.
+type Searcher interface {
+	Search(ctx context.Context, input string, opts search.Options) (search.Response, error)
+}
+
+// Pokedex loads Pokémon for the compare view.
+type Pokedex interface {
+	PokemonGetByNames(ctx context.Context, names []string) ([]store.Pokemon, error)
+}
+
+// Deps are what the handlers depend on. Ping reports whether the database is
+// reachable, for the readiness check.
+type Deps struct {
+	Search  Searcher
+	Pokedex Pokedex
+	Ping    func(ctx context.Context) error
+}
 
 // NewServer builds the Echo instance with its middleware, error handler and
 // routes. Middleware order matters: the request ID exists before anything logs,
 // the access log wraps the handler so it sees the final status, and panics are
 // recovered innermost so they surface as errors to the central handler.
-func NewServer(log *slog.Logger) (*echo.Echo, error) {
+func NewServer(log *slog.Logger, deps Deps) (*echo.Echo, error) {
 	access, err := accessLog(log)
+	if err != nil {
+		return nil, err
+	}
+	assets, err := newAssets()
 	if err != nil {
 		return nil, err
 	}
 
 	e := echo.New()
-	e.HTTPErrorHandler = errorHandler(log)
-	e.Use(middleware.RequestID(), requestContext(), access, middleware.Recover())
-	e.GET(healthPath, healthz)
-	return e, nil
-}
+	e.HTTPErrorHandler = errorHandler(log, assets.version)
+	e.Use(middleware.RequestID(), requestContext(), access, middleware.Recover(), securityHeaders())
 
-func healthz(c *echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
+	e.GET(healthPath, healthz)
+	e.GET(readyPath, readyz(deps.Ping))
+	assets.register(e)
+
+	h := &handlers{deps: deps, assets: assets.version}
+	e.GET("/", h.search)
+	e.GET("/compare", h.compare)
+	return e, nil
 }
