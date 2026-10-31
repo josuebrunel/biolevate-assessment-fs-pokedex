@@ -120,6 +120,29 @@ func TestStore(t *testing.T) {
 		}
 	})
 
+	t.Run("TextSearch ranks phrase matches and status moves first", func(t *testing.T) {
+		hits, err := s.TextSearch(ctx, store.KindMove, []string{"sleep", "puts the target to sleep"}, 50)
+		if err != nil {
+			t.Fatal(err)
+		}
+		top := names(hits)[:5]
+		slices.Sort(top)
+		if want := []string{"hypnosis", "lovely-kiss", "sing", "sleep-powder", "spore"}; !slices.Equal(top, want) {
+			t.Errorf("top 5 = %v, want the phrase matches %v (all: %v)", top, want, names(hits))
+		}
+
+		// Status moves describe their main effect, so they lead the ties.
+		hits, err = s.TextSearch(ctx, store.KindMove, []string{"paralyze"}, 50)
+		if err != nil {
+			t.Fatal(err)
+		}
+		top = names(hits)[:3]
+		slices.Sort(top)
+		if want := []string{"glare", "stun-spore", "thunder-wave"}; !slices.Equal(top, want) {
+			t.Errorf("top 3 = %v, want the status moves %v (all: %v)", top, want, names(hits))
+		}
+	})
+
 	t.Run("ConceptList", func(t *testing.T) {
 		concepts, err := s.ConceptList(ctx)
 		if err != nil {
