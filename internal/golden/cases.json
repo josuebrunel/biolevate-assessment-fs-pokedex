@@ -1597,5 +1597,290 @@
   "category": "odd input",
   "query": "pink flying pokemon",
   "expect_empty": true
+ },
+ {
+  "name": "held-out: venosaur",
+  "category": "held-out",
+  "query": "venosaur",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "venusaur",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "held-out: jigly",
+  "category": "held-out",
+  "query": "jigly",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "jigglypuff",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "held-out: kangaskan",
+  "category": "held-out",
+  "query": "kangaskan",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "kangaskhan",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "held-out: fastest water pokemon",
+  "category": "held-out",
+  "query": "fastest water pokemon",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "starmie",
+    "within": 1
+   },
+   {
+    "kind": "pokemon",
+    "name": "tentacruel",
+    "within": 3
+   }
+  ]
+ },
+ {
+  "name": "held-out: bulky psychic",
+  "category": "held-out",
+  "query": "bulky psychic",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "mewtwo",
+    "within": 1
+   },
+   {
+    "kind": "pokemon",
+    "name": "mew",
+    "within": 3
+   },
+   {
+    "kind": "pokemon",
+    "name": "slowbro",
+    "within": 3
+   }
+  ]
+ },
+ {
+  "name": "held-out: lightest ghost",
+  "category": "held-out",
+  "query": "lightest ghost",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "gastly",
+    "within": 2
+   }
+  ]
+ },
+ {
+  "name": "held-out: make the enemy flinch",
+  "category": "held-out",
+  "query": "make the enemy flinch",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "headbutt",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "bite",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "stomp",
+    "within": 10
+   }
+  ]
+ },
+ {
+  "name": "held-out: confuse the opponent",
+  "category": "held-out",
+  "query": "confuse the opponent",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "confuse-ray",
+    "within": 3
+   },
+   {
+    "kind": "moves",
+    "name": "supersonic",
+    "within": 8
+   },
+   {
+    "kind": "moves",
+    "name": "psybeam",
+    "within": 10
+   }
+  ]
+ },
+ {
+  "name": "held-out: recover health",
+  "category": "held-out",
+  "query": "recover health",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "recover",
+    "within": 3
+   },
+   {
+    "kind": "moves",
+    "name": "soft-boiled",
+    "within": 10
+   }
+  ]
+ },
+ {
+  "name": "held-out: poison my opponent",
+  "category": "held-out",
+  "query": "poison my opponent",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "poison-powder",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "toxic",
+    "within": 5
+   },
+   {
+    "kind": "moves",
+    "name": "poison-sting",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "held-out: pokemon with static",
+  "category": "held-out",
+  "query": "pokemon with static",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "pikachu",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "raichu",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "electabuzz",
+    "within": 6
+   },
+   {
+    "kind": "pokemon",
+    "name": "voltorb",
+    "within": 6
+   },
+   {
+    "kind": "pokemon",
+    "name": "zapdos",
+    "within": 10
+   }
+  ]
+ },
+ {
+  "name": "held-out: who learns earthquake",
+  "category": "held-out",
+  "query": "who learns earthquake",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "arbok",
+    "within": 12
+   },
+   {
+    "kind": "pokemon",
+    "name": "blastoise",
+    "within": 12
+   },
+   {
+    "kind": "pokemon",
+    "name": "charizard",
+    "within": 12
+   }
+  ]
+ },
+ {
+  "name": "held-out: sun team",
+  "category": "held-out",
+  "query": "sun team",
+  "expect": [
+   {
+    "kind": "abilities",
+    "name": "chlorophyll",
+    "within": 5
+   },
+   {
+    "kind": "pokemon",
+    "name": "ninetales",
+    "within": 10
+   }
+  ]
+ },
+ {
+  "name": "held-out: sandstorm team",
+  "category": "held-out",
+  "query": "sandstorm team",
+  "expect": [
+   {
+    "kind": "abilities",
+    "name": "sand-veil",
+    "within": 3
+   },
+   {
+    "kind": "pokemon",
+    "name": "diglett",
+    "within": 10
+   },
+   {
+    "kind": "pokemon",
+    "name": "geodude",
+    "within": 10
+   }
+  ]
+ },
+ {
+  "name": "held-out: strongest defence rock",
+  "category": "held-out",
+  "query": "strongest defence rock",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "onix",
+    "within": 1
+   },
+   {
+    "kind": "pokemon",
+    "name": "golem",
+    "within": 3
+   },
+   {
+    "kind": "pokemon",
+    "name": "omastar",
+    "within": 5
+   }
+  ]
  }
 ]

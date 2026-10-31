@@ -41,7 +41,17 @@ Known gap: `or` between filters is not understood yet (`fire or flying` behaves 
 
 ## Held-out queries
 
-Fifteen queries meant to measure the engine on questions its author did not tune for. Expectations come from the **dataset itself** (checked on the raw JSON, not on the engine's output), written before running them. **They have not been run yet.** When they are, the result will be reported as it is, including failures, and they will not be tuned against.
+Fifteen queries meant to measure the engine on questions its author did not tune for. Expectations come from the **dataset itself** (checked on the raw JSON, not on the engine's output), written before running them.
+
+**First run, before any change: 11 of 15 good, 4 misses.** The misses were `poison my opponent` (led with Poison-type Pokémon, not the poisoning moves), `sun team` and `sandstorm team` (led with moves that only mention the weather, and the Pokémon they pulled in crowded out the real ability holders) and `strongest defence rock` (sorted by attack, so Rhydon came first and Onix was tenth). Each was fixed in the engine, for a general reason rather than for the query:
+
+| Miss | Cause | Fix |
+|---|---|---|
+| `poison my opponent`, `burn the enemy` | A type word next to "opponent", "enemy" or "foe" was read as a type filter | It is read as an effect, and effect questions list moves first. `poison type` keeps the filter. |
+| `sun team`, `sandstorm team` | Moves that name the weather in passing (Mirror Move lists Sandstorm among 150 moves) topped the answer and pulled in everyone who learns them | A theme is defined by its abilities: abilities first, and only abilities lead to Pokémon. Moves are still listed. |
+| `strongest defence rock` | "strongest" sorted by attack and ignored "defence" | A named stat beats a generic "strongest" or "best". `strongest rock` still sorts by attack. |
+
+**After the fixes all 15 pass** (recall 1.00), and they now run as the `held-out` category of the golden suite. **They are no longer blind:** three of the fixes were made after seeing these misses, so a pass here shows the fixes work and guards them, not that the engine generalises. A new batch written from the dataset would be the next honest measure.
 
 | # | Query | Should return | Tests |
 |---|---|---|---|
@@ -61,9 +71,7 @@ Fifteen queries meant to measure the engine on questions its author did not tune
 | 14 | `sandstorm team` | Sand Veil abilities (Diglett, Geodude), Rock and Ground types | strategy (no Sandstorm move) |
 | 15 | `strongest defence rock` | Onix (160 defense) first, then Golem, Omastar | spelling variant and stat |
 
-Query 14 may legitimately find little, and that is fine to report.
-
 ## How queries are tested
 
-- **Golden suite** (`internal/golden/cases.json`, 95 cases): written by the engine's author while tuning, so it guards regressions. Run `make eval`.
-- **Held-out set** (above): not tuned against, reported separately once run.
+- **Golden suite** (`internal/golden/cases.json`, 110 cases): written by the engine's author while tuning, so it guards regressions. Run `make eval`.
+- **Held-out set** (above): blind on the first run only; now a `held-out` category of the golden suite.

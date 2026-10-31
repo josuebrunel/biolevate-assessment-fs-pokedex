@@ -42,6 +42,12 @@ var statWords = map[string]statIntent{
 	"weak": {store.StatTotal, true}, "weakest": {store.StatTotal, true},
 }
 
+// intensifiers say "most" without naming a stat ("strongest defence rock"). They
+// sort by attack on their own, but yield when the query names the stat itself.
+var intensifiers = map[string]bool{
+	"strong": true, "stronger": true, "strongest": true, "powerful": true, "best": true, "overall": true,
+}
+
 // legendaryWords select legendary and mythical Pokémon.
 var legendaryWords = map[string]bool{"legendary": true, "legendaries": true, "mythical": true, "mythic": true}
 
@@ -67,6 +73,11 @@ var stopwords = map[string]bool{
 	"compare": true, "vs": true, "versus": true,
 	"but": true, "color": true, "colour": true, "colors": true, "colours": true, "put": true, "make": true, "cause": true, "causes": true, "opponent": true, "enemy": true, "foe": true,
 }
+
+// targetWords name who an effect lands on ("poison my opponent"). With one of
+// them in the query, a type word such as "poison" or "fire" names an effect
+// (a status, a burn) rather than a type filter, unless the user wrote "type".
+var targetWords = map[string]bool{"opponent": true, "enemy": true, "foe": true}
 
 // statNouns are stat words that name the stat itself, as in "raise defense",
 // as well as expressing a sort ("defense" alone sorts by it). After an effect

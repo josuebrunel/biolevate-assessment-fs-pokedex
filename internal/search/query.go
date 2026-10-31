@@ -28,6 +28,7 @@ type Query struct {
 	Effect    bool         // asks for a stat change ("raise defense"): text is searched, names are not
 	Kinds     []store.Kind // entity kinds the user named, empty means any
 	Limit     int          // from "top N", zero when unset
+	OnTarget  bool         // names the opponent ("burn the enemy"): an effect, so moves lead
 	Strategy  bool         // "team", "strategy": an exploratory, multi-entity question
 	Versus    []string     // sides of "X vs Y" / "compare X and Y", for the compare view
 	Notes     []string     // things the parser understood but could not act on, shown to the user

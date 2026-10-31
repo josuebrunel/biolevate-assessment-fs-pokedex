@@ -17,7 +17,11 @@ func TestParse(t *testing.T) {
 		{"partial name", "bulba", Query{Terms: []string{"bulba"}}},
 		{"fast electric", "fast electric",
 			Query{Types: []string{"electric"}, Sort: store.StatSpeed}},
-		{"sleep without vocabulary", "put opponent to sleep", Query{Terms: []string{"sleep"}}},
+		{"a type word next to an opponent is an effect", "poison my opponent", Query{Terms: []string{"poison"}, Effect: true, OnTarget: true}},
+		{"explicit type keeps the filter", "poison type opponent", Query{Types: []string{"poison"}, OnTarget: true}},
+		{"a named stat beats an intensifier", "strongest defence rock", Query{Types: []string{"rock"}, Sort: store.StatDefense}},
+		{"intensifier alone still sorts by attack", "strongest rock", Query{Types: []string{"rock"}, Sort: store.StatAttack}},
+		{"sleep without vocabulary", "put opponent to sleep", Query{Terms: []string{"sleep"}, OnTarget: true}},
 		{"rain strategy", "rain team", Query{Terms: []string{"rain"}, Strategy: true}},
 
 		// Types.

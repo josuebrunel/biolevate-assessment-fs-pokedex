@@ -218,7 +218,7 @@ Also works: `chu`, `legendary fire`, `heaviest`, `pokemon with levitate`, `water
 
 | Check | What it proves |
 |---|---|
-| **Golden suite** (95 queries) | Expected results within the expected rank; recall and MRR per category. **Written by the engine's author, so it guards regressions; it is not an independent benchmark.** |
+| **Golden suite** (110 queries) | Expected results within the expected rank; recall and MRR per category. **Written by the engine's author, so it guards regressions; it is not an independent benchmark.** |
 | **Index guard** | Every query's plan is checked; **one that would scan a table fails the test**. |
 | **Query-count test** | The same number of queries for 2 or 40 results (**no N+1**). |
 | **Real-Postgres and end-to-end tests** | Store, importer, migrations, web layer and the four situations, through HTTP and the templates. |
@@ -246,7 +246,7 @@ Also works: `chu`, `legendary fire`, `heaviest`, `pokemon with levitate`, `water
 **Next steps**
 
 1. **Species description on cards, a detail page and evolution families** (from the family id).
-2. **Run the held-out queries** listed in [docs/queries.md](docs/queries.md) (written from the dataset, not tuned against) and report the result next to the golden suite. Add `or` between types.
+2. **Write a second, blind held-out batch.** The first 15 ([docs/queries.md](docs/queries.md#held-out-queries)) found 4 misses, all fixed, so they are no longer blind. Add `or` between types.
 3. **Measure embeddings** (pgvector, a local model, fallback to lexical) against that set; keep them only if they win by enough to justify a service.
 4. **A small type chart**, if extra data is allowed.
 5. **A pluggable parser** (vocabulary as data, one filter rule for every facet): [proposal](docs/design.md#proposal-a-pluggable-data-driven-parser).

@@ -189,6 +189,12 @@ func (e *Engine) expand(ctx context.Context, q Query, ex Expansion, results []Re
 		}
 	}
 
+	// A theme ("sandstorm team") is defined by abilities. Moves that merely
+	// mention it ("Mirror Move") would pull in every Pokémon that learns them.
+	if q.Strategy && len(ex.Concepts) > 0 {
+		moveIDs = nil
+	}
+
 	var links []link
 	if len(moveIDs) > 0 {
 		moves, err := e.store.MoveGetMany(ctx, moveIDs)
@@ -377,7 +383,7 @@ func (e *Engine) groups(ctx context.Context, q Query, ex Expansion, results []Re
 			groups = append(groups, Group{Title: groupTitle(kind, q.Strategy, concept), Kind: kind, Items: items})
 		}
 	}
-	// Order groups by their best retrieval score, not the fused score: reaching a
+	// Order groups by their best retrieval score, except for a theme (see strategyOrder), not the fused score: reaching a
 	// Pokémon through the graph adds to its fused score and would always put
 	// "who can do it" ahead of "how to do it". Kinds found only through the
 	// graph score zero and come last.
@@ -386,6 +392,12 @@ func (e *Engine) groups(ctx context.Context, q Query, ex Expansion, results []Re
 		best[r.Kind] = max(best[r.Kind], r.Score)
 	}
 	slices.SortStableFunc(groups, func(a, b Group) int {
+		if q.Effect || q.OnTarget {
+			return effectOrder(a.Kind) - effectOrder(b.Kind)
+		}
+		if q.Strategy && concept != "" {
+			return strategyOrder(a.Kind) - strategyOrder(b.Kind)
+		}
 		switch {
 		case best[a.Kind] > best[b.Kind]:
 			return -1
@@ -395,6 +407,31 @@ func (e *Engine) groups(ctx context.Context, q Query, ex Expansion, results []Re
 		return kindOrder(a.Kind) - kindOrder(b.Kind)
 	})
 	return groups, nil
+}
+
+// strategyOrder puts abilities first for a theme ("rain team"): they define
+// it, the Pokémon use it, and moves only mention it, often in passing in a long
+// text, which retrieval scores cannot tell from a real link.
+func strategyOrder(k store.Kind) int {
+	switch k {
+	case store.KindAbility:
+		return 0
+	case store.KindPokemon:
+		return 1
+	}
+	return 2
+}
+
+// effectOrder puts moves and abilities first when the user asked for an effect
+// ("poison my opponent"): they cause it, Pokémon only learn it.
+func effectOrder(k store.Kind) int {
+	switch k {
+	case store.KindMove:
+		return 0
+	case store.KindAbility:
+		return 1
+	}
+	return 2
 }
 
 func groupTitle(kind store.Kind, strategy bool, concept string) string {

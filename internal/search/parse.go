@@ -39,6 +39,10 @@ func Parse(raw string) Query {
 
 	words, q.Versus = splitVersus(words)
 
+	q.OnTarget = slices.ContainsFunc(words, func(w string) bool { return targetWords[w] })
+	effectOfType := q.OnTarget &&
+		!slices.ContainsFunc(words, func(w string) bool { return w == "type" || w == "types" || strings.HasSuffix(w, "-type") })
+
 	negate := false
 	for i := 0; i < len(words); i++ {
 		w := words[i]
@@ -104,10 +108,15 @@ func Parse(raw string) Query {
 		case statNouns[w] && effectVerbs[prev]:
 			q.Terms = append(q.Terms, w) // "raise defense" asks for an effect, not a sort
 			q.Effect = true
+		case isType(w) && effectOfType:
+			q.Terms = append(q.Terms, w) // "poison my opponent" asks for an effect, not a type
+			q.Effect = true
 		case isType(w):
 			if t := strings.TrimSuffix(w, "-type"); !slices.Contains(q.Types, t) {
 				q.Types = append(q.Types, t)
 			}
+		case intensifiers[w] && namesStat(words, i):
+			// "strongest defence": the named stat decides, so the intensifier is not a conflict.
 		case statWords[w] != statIntent{}:
 			switch {
 			case q.Sort == "": // first stat word wins
@@ -175,6 +184,17 @@ func tokenize(s string) []string {
 		}
 	}
 	return out
+}
+
+// namesStat reports whether another word in the query names a stat directly
+// ("defence", "speed"), not as the object of an effect verb ("raise defense").
+func namesStat(words []string, skip int) bool {
+	for i, w := range words {
+		if i != skip && statNouns[w] && (i == 0 || !effectVerbs[words[i-1]]) {
+			return true
+		}
+	}
+	return false
 }
 
 func isType(w string) bool {
