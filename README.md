@@ -28,6 +28,7 @@
   - [Graph expansion and the engine](#graph-expansion-and-the-engine)
   - [Web UI](#web-ui)
   - [Golden-query suite](#golden-query-suite)
+  - [Hardening and operations](#hardening-and-operations)
   - [Logging](#logging)
   - [Code conventions](#code-conventions)
   - [Commands](#commands)
@@ -156,7 +157,8 @@ AI-use disclosure land here as they are built.
 | [Graph expansion and explanations](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/12) | done |
 | [Web UI and compare view](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/13) | done |
 | [Golden-query suite](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/14) | done |
-| Optional embeddings, hardening, write-up | planned |
+| [Hardening: limits, pool, container, smoke test](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/15) | done |
+| Optional embeddings, write-up | planned |
 
 ## Run it
 
@@ -456,6 +458,46 @@ the three-character minimum). They are written down instead of hidden. A known
 case must fail, so when one starts passing the suite fails until its flag is
 removed. Run `make eval` for the full report; the suite also runs in CI.
 
+## Hardening and operations
+
+All settings are environment variables with the `APP_` prefix, loaded and
+validated once at startup. A value that would misbehave under load (for example
+a request timeout that is not below the write timeout) fails fast with a clear
+message instead of surfacing later.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `APP_DATABASE_URL` | required | Postgres connection URL (never logged with its password) |
+| `APP_HTTP_ADDR` | `:8080` | listen address |
+| `APP_READ_HEADER_TIMEOUT` / `APP_READ_TIMEOUT` / `APP_WRITE_TIMEOUT` / `APP_IDLE_TIMEOUT` | `3s` / `5s` / `10s` / `60s` | server timeouts, against slow clients |
+| `APP_REQUEST_TIMEOUT` | `8s` | deadline on each request's context; must be below the write timeout |
+| `APP_MAX_BODY_BYTES` | `65536` | request body cap |
+| `APP_RATE_LIMIT` / `APP_RATE_BURST` | `20` / `40` | requests per second and burst per client IP; `0` turns the limit off |
+| `APP_DB_MAX_OPEN_CONNS` / `APP_DB_MAX_IDLE_CONNS` / `APP_DB_CONN_MAX_LIFETIME` | `10` / `5` / `30m` | connection pool |
+| `APP_DB_STATEMENT_TIMEOUT` | `5s` | Postgres cancels any statement running longer; `0` disables |
+| `APP_SHUTDOWN_TIMEOUT` | `10s` | grace period to finish in-flight requests on SIGTERM |
+
+- **Time is bounded at three levels.** The request deadline cancels the engine
+  and its queries through the context; Postgres cancels any single statement
+  over the statement timeout; the server timeouts stop slow or stalled clients.
+  A search that runs out of time returns a 504 page with the request ID, not a
+  hung connection.
+- **Abuse control without extra services:** an in-process per-IP token bucket
+  (HTTP 429 with a readable page) and gzip. Probes and static files are exempt
+  from the limit. Behind a reverse proxy, rate limit there too; this one is a
+  safety net for a single instance, not a distributed limiter.
+- **Probes:** `/healthz` says the process is up, `/readyz` also pings the
+  database. The binary has a `-healthcheck` flag that calls `/readyz`, used by
+  the image's `HEALTHCHECK`, because the distroless image has no shell or curl.
+- **Container:** multi-stage build into a distroless, non-root image of about
+  17 MB, with the version stamped in (`VERSION=1.2.3 docker compose build`) and
+  logged at startup. Compose starts the app with a read-only filesystem, all
+  capabilities dropped and `no-new-privileges`, and restarts it unless stopped.
+  Order is enforced with health checks: db, then migrate, then import, then app.
+- **CI smoke test:** a second job builds the real image, runs
+  `docker compose up --wait` and checks `/readyz`, a search and the compare view,
+  so a broken Dockerfile or migration cannot pass unnoticed.
+
 ## Logging
 
 Logs are structured (`log/slog`), one JSON object per line by default.
@@ -472,7 +514,7 @@ Logs are structured (`log/slog`), one JSON object per line by default.
   in the `X-Request-Id` header and in error bodies.
 - **One access line per request:** method, route, path, status, duration, bytes,
   remote IP. The level follows the status: 5xx `error`, 4xx `warn`, otherwise
-  `info`; health checks log at `debug` to keep probes quiet.
+  `info`; health and readiness checks log at `debug` to keep probes quiet.
 - **Errors are logged once**, in the central error handler, with the underlying
   error. The client only sees the generic status text (4xx keep their own
   message) plus the request ID, so internals never leak.
