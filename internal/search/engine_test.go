@@ -120,6 +120,33 @@ func TestEngine(t *testing.T) {
 		}
 	})
 
+	t.Run("filters narrow Pokémon found through a move", func(t *testing.T) {
+		resp := searchFor(t, "acid and pink", search.Options{PerGroup: 10})
+		for _, g := range resp.Groups {
+			if g.Kind == store.KindPokemon {
+				t.Errorf("no pink Pokémon learns Acid, but the response lists %v", itemNames(g))
+			}
+		}
+		if want := "No pink Pokémon is linked to “acid”, so only moves and abilities are shown."; !slices.Contains(resp.Notes, want) {
+			t.Errorf("notes = %v, want %q", resp.Notes, want)
+		}
+		group(t, resp, "Moves")
+
+		resp = searchFor(t, "electric thunder", search.Options{PerGroup: 10})
+		pokemon := group(t, resp, "Pokémon")
+		if len(pokemon.Items) == 0 {
+			t.Fatal("electric Pokémon that learn Thunder: none")
+		}
+		for _, it := range pokemon.Items {
+			if !slices.Contains(it.Pokemon.Types, "electric") {
+				t.Errorf("%s is not electric", it.Name)
+			}
+		}
+		if len(resp.Notes) != 0 {
+			t.Errorf("notes = %v, want none when there are matches", resp.Notes)
+		}
+	})
+
 	// Challenge 3: discover an answer without knowing its vocabulary.
 	t.Run("sleep: ways to do it, and who can", func(t *testing.T) {
 		resp := searchFor(t, "put opponent to sleep", search.Options{PerGroup: 10})

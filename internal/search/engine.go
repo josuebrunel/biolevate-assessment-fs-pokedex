@@ -134,9 +134,17 @@ func (e *Engine) Search(ctx context.Context, input string, opts Options) (Respon
 			return Response{}, err
 		}
 	}
-	resp.Groups, err = e.groups(ctx, q, ex, results, candidates, perGroup)
+	// "acid and pink" means pink Pokémon that use Acid: when a move or ability was
+	// found, the type and colour filters narrow the Pokémon it leads to.
+	narrow := q.pokemonFilters() && len(q.Terms) > 0 && len(candidates.moves)+len(candidates.abils) > 0
+	linked := len(candidates.linked)
+	resp.Groups, err = e.groups(ctx, q, ex, results, candidates, perGroup, narrow)
 	if err != nil {
 		return Response{}, err
+	}
+	if narrow && linked > 0 && !slices.ContainsFunc(resp.Groups, func(g Group) bool { return g.Kind == store.KindPokemon }) {
+		resp.Notes = append(resp.Notes, fmt.Sprintf("No %s Pokémon is linked to %s, so only moves and abilities are shown.",
+			q.filterPhrase(), quoteAll([]string{strings.Join(q.Terms, " ")})))
 	}
 	if len(shown) > 0 {
 		resp.Groups = slices.DeleteFunc(resp.Groups, func(g Group) bool { return !slices.Contains(shown, g.Kind) })
@@ -238,7 +246,7 @@ func (e *Engine) expand(ctx context.Context, q Query, ex Expansion, results []Re
 
 // groups fuses the retrieval results with the graph candidates, hydrates what
 // is missing and arranges the items into titled groups.
-func (e *Engine) groups(ctx context.Context, q Query, ex Expansion, results []Result, x expansion, perGroup int) ([]Group, error) {
+func (e *Engine) groups(ctx context.Context, q Query, ex Expansion, results []Result, x expansion, perGroup int, narrow bool) ([]Group, error) {
 	names := map[entityKey]string{}
 	reasons := map[entityKey][]string{}
 	base := ranked{weight: 1}
@@ -267,6 +275,24 @@ func (e *Engine) groups(ctx context.Context, q Query, ex Expansion, results []Re
 	}
 	for _, p := range loaded {
 		pokemon[p.ID] = p
+	}
+
+	if narrow {
+		// Keep the Pokémon that pass the filters. Of the ones the retriever listed
+		// for the filters alone, keep only those a name or text also matched.
+		x.linked = slices.DeleteFunc(slices.Clone(x.linked), func(id int) bool { return !q.allows(pokemon[id]) })
+		results = slices.DeleteFunc(slices.Clone(results), func(r Result) bool {
+			if r.Kind != store.KindPokemon {
+				return false
+			}
+			if !q.allows(pokemon[r.ID]) {
+				return true
+			}
+			return !slices.Contains(x.linked, r.ID) && !matchedByWords(r)
+		})
+		base.items = slices.DeleteFunc(base.items, func(c candidate) bool {
+			return c.kind == store.KindPokemon && !slices.ContainsFunc(results, func(r Result) bool { return r.Kind == c.kind && r.ID == c.id })
+		})
 	}
 
 	graph := func(ids []int, weight float64) ranked {
@@ -397,4 +423,11 @@ func effectText(short, full *string) string {
 		return *full
 	}
 	return ""
+}
+
+// matchedByWords reports whether a name or text match, not only a filter, found r.
+func matchedByWords(r Result) bool {
+	return slices.ContainsFunc(r.Reasons, func(reason string) bool {
+		return strings.HasPrefix(reason, "name") || strings.HasPrefix(reason, "text")
+	})
 }

@@ -1464,5 +1464,70 @@
   "category": "odd input",
   "query": "🔥",
   "expect_empty": true
+ },
+ {
+  "name": "colour narrows pokemon found through a move",
+  "category": "odd input",
+  "query": "acid and pink",
+  "expect": [
+   {
+    "kind": "moves",
+    "name": "acid",
+    "within": 1
+   }
+  ],
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "tentacool",
+    "within": 50
+   },
+   {
+    "kind": "pokemon",
+    "name": "ekans",
+    "within": 50
+   }
+  ]
+ },
+ {
+  "name": "type narrows pokemon found through a move",
+  "category": "odd input",
+  "query": "electric thunder",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "zapdos",
+    "within": 5
+   }
+  ],
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "charizard",
+    "within": 50
+   },
+   {
+    "kind": "pokemon",
+    "name": "blastoise",
+    "within": 50
+   }
+  ]
+ },
+ {
+  "name": "negation narrows pokemon found through an ability",
+  "category": "odd input",
+  "query": "static but not electric",
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "pikachu",
+    "within": 50
+   },
+   {
+    "kind": "pokemon",
+    "name": "zapdos",
+    "within": 50
+   }
+  ]
  }
 ]

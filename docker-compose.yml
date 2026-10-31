@@ -18,6 +18,7 @@ services:
 
   migrate:
     build: .
+    container_name: pokedex-migrate-up
     command: ["-migrate", "up"]
     environment:
       APP_DATABASE_URL: postgres://pokedex:pokedex@db:5432/pokedex?sslmode=disable
@@ -27,6 +28,7 @@ services:
 
   import:
     build: .
+    container_name: pokedex-import
     command: ["-import"]
     environment:
       APP_DATABASE_URL: postgres://pokedex:pokedex@db:5432/pokedex?sslmode=disable

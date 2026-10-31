@@ -291,22 +291,7 @@ func (l *Lexical) collection(ctx context.Context, q Query, names []string, sortB
 	if err != nil {
 		return nil, err
 	}
-	pokemon = slices.DeleteFunc(pokemon, func(p store.Pokemon) bool {
-		for _, t := range q.Types {
-			if !slices.Contains(p.Types, t) {
-				return true
-			}
-		}
-		for _, t := range q.NotTypes {
-			if slices.Contains(p.Types, t) {
-				return true
-			}
-		}
-		if q.Color != "" && (p.Color == nil || *p.Color != q.Color) {
-			return true
-		}
-		return q.Legendary && !p.IsLegendary && !p.IsMythical
-	})
+	pokemon = slices.DeleteFunc(pokemon, func(p store.Pokemon) bool { return !q.allows(p) })
 	slices.SortStableFunc(pokemon, func(a, b store.Pokemon) int {
 		d := pokemonStat(b, sortBy) - pokemonStat(a, sortBy)
 		if q.Ascending {

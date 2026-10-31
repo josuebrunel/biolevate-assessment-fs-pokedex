@@ -4,6 +4,7 @@ package search
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
@@ -30,6 +31,45 @@ type Query struct {
 	Versus    []string     // sides of "X vs Y" / "compare X and Y", for the compare view
 	Notes     []string     // things the parser understood but could not act on, shown to the user
 	TooShort  bool         // a single letter: too little to search for
+}
+
+// pokemonFilters reports whether the query filters Pokémon by type, colour or rarity.
+func (q Query) pokemonFilters() bool {
+	return len(q.Types) > 0 || len(q.NotTypes) > 0 || q.Color != "" || q.Legendary
+}
+
+// allows reports whether p passes the query's type, colour and legendary filters.
+func (q Query) allows(p store.Pokemon) bool {
+	for _, t := range q.Types {
+		if !slices.Contains(p.Types, t) {
+			return false
+		}
+	}
+	for _, t := range q.NotTypes {
+		if slices.Contains(p.Types, t) {
+			return false
+		}
+	}
+	if q.Color != "" && (p.Color == nil || *p.Color != q.Color) {
+		return false
+	}
+	return !q.Legendary || p.IsLegendary || p.IsMythical
+}
+
+// filterPhrase names the filters for a sentence: "pink", "electric", "non-flying".
+func (q Query) filterPhrase() string {
+	var parts []string
+	if q.Color != "" {
+		parts = append(parts, q.Color)
+	}
+	parts = append(parts, q.Types...)
+	for _, t := range q.NotTypes {
+		parts = append(parts, "non-"+t)
+	}
+	if q.Legendary {
+		parts = append(parts, "legendary")
+	}
+	return strings.Join(parts, " ")
 }
 
 // Interpretation describes how the query was understood, one short phrase per
