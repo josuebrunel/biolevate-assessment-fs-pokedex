@@ -58,3 +58,54 @@ func TestParseValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestEmbeddedConcepts(t *testing.T) {
+	ds, err := Embedded()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ds.Concepts) == 0 {
+		t.Fatal("no concepts loaded")
+	}
+	keys := map[string]bool{}
+	for _, c := range ds.Concepts {
+		keys[c.Key] = true
+	}
+	for _, want := range []string{"sleep", "paralysis", "poison", "rain"} {
+		if !keys[want] {
+			t.Errorf("concept %q missing", want)
+		}
+	}
+}
+
+func TestParseConceptsValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		json    string
+		wantErr string
+	}{
+		{"valid", `{"concepts":[{"key":"sleep","label":"Sleep","aliases":["asleep"],"terms":["sleep","puts the target to sleep"]}]}`, ""},
+		{"bad key", `{"concepts":[{"key":"Sleep","label":"S","aliases":["a"],"terms":["t"]}]}`, "kebab-case"},
+		{"duplicate concept", `{"concepts":[{"key":"a","label":"A","aliases":["x"],"terms":["t"]},{"key":"a","label":"A","aliases":["y"],"terms":["t"]}]}`, "duplicate concept"},
+		{"empty label", `{"concepts":[{"key":"a","label":" ","aliases":["x"],"terms":["t"]}]}`, "empty label"},
+		{"no aliases", `{"concepts":[{"key":"a","label":"A","aliases":[],"terms":["t"]}]}`, "no aliases"},
+		{"no terms", `{"concepts":[{"key":"a","label":"A","aliases":["x"]}]}`, "no terms"},
+		{"uppercase alias", `{"concepts":[{"key":"a","label":"A","aliases":["Asleep"],"terms":["t"]}]}`, "lowercase"},
+		{"multi-word alias", `{"concepts":[{"key":"a","label":"A","aliases":["fall asleep"],"terms":["t"]}]}`, "single word"},
+		{"duplicate alias", `{"concepts":[{"key":"a","label":"A","aliases":["x","x"],"terms":["t"]}]}`, "duplicate alias"},
+		{"untrimmed term", `{"concepts":[{"key":"a","label":"A","aliases":["x"],"terms":[" t"]}]}`, "untrimmed"},
+		{"unknown field", `{"concepts":[{"key":"a","label":"A","aliases":["x"],"terms":["t"],"typo":1}]}`, "decode concepts"},
+		{"malformed", `{`, "decode concepts"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := ParseConcepts([]byte(tt.json))
+			switch {
+			case tt.wantErr == "" && err != nil:
+				t.Fatalf("unexpected error: %v", err)
+			case tt.wantErr != "" && (err == nil || !strings.Contains(err.Error(), tt.wantErr)):
+				t.Fatalf("error = %v, want containing %q", err, tt.wantErr)
+			}
+		})
+	}
+}

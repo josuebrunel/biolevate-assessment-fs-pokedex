@@ -24,6 +24,10 @@ type Dataset struct {
 	Pokemon   []Pokemon `json:"pokemon"`
 	Moves     []Move    `json:"moves"`
 	Abilities []Ability `json:"abilities"`
+
+	// Concepts is not part of pokedex.json: it is our own vocabulary seed,
+	// attached by Embedded.
+	Concepts []Concept `json:"-"`
 }
 
 // Pokemon is one species entry. Nullable upstream values are pointers.
@@ -86,13 +90,21 @@ type Ability struct {
 	IsMainSeries bool    `json:"is_main_series"`
 }
 
-// Embedded returns the checksum-verified, validated embedded snapshot.
+// Embedded returns the checksum-verified, validated embedded snapshot together
+// with the embedded concept seed.
 func Embedded() (*Dataset, error) {
 	sum := sha256.Sum256(snapshot)
 	if got := hex.EncodeToString(sum[:]); got != SnapshotSHA256 {
 		return nil, fmt.Errorf("snapshot checksum mismatch: got %s, want %s", got, SnapshotSHA256)
 	}
-	return Parse(snapshot)
+	ds, err := Parse(snapshot)
+	if err != nil {
+		return nil, err
+	}
+	if ds.Concepts, err = EmbeddedConcepts(); err != nil {
+		return nil, err
+	}
+	return ds, nil
 }
 
 // Parse decodes and validates a dataset. Unknown fields are ignored so the

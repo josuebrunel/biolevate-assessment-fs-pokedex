@@ -1,0 +1,88 @@
+{
+  "concepts": [
+    {
+      "key": "sleep",
+      "label": "Sleep",
+      "aliases": ["sleep", "asleep", "sleeping", "sleepy", "drowsy", "drowsiness", "snooze", "slumber", "nap", "lull"],
+      "terms": ["sleep", "asleep", "puts the target to sleep"]
+    },
+    {
+      "key": "paralysis",
+      "label": "Paralysis",
+      "aliases": ["paralysis", "paralyze", "paralyse", "paralyzed", "paralysed", "paralyzing", "stun", "stunned", "immobilize", "immobilise", "numb"],
+      "terms": ["paralyze", "paralyzes the target"]
+    },
+    {
+      "key": "poison",
+      "label": "Poison",
+      "aliases": ["poison", "poisoned", "poisoning", "toxic", "venom", "venomous"],
+      "terms": ["poison", "poisoned"]
+    },
+    {
+      "key": "burn",
+      "label": "Burn",
+      "aliases": ["burn", "burned", "burning", "burns", "scald", "scorch"],
+      "terms": ["burn", "burned"]
+    },
+    {
+      "key": "freeze",
+      "label": "Freeze",
+      "aliases": ["freeze", "frozen", "freezing", "deepfreeze"],
+      "terms": ["freeze", "frozen"]
+    },
+    {
+      "key": "confusion",
+      "label": "Confusion",
+      "aliases": ["confuse", "confused", "confusion", "confusing", "dizzy", "daze", "dazed", "disorient", "disoriented"],
+      "terms": ["confuse", "confused"]
+    },
+    {
+      "key": "healing",
+      "label": "Healing",
+      "aliases": ["heal", "healing", "healer", "recover", "recovery", "restore", "regenerate", "regen", "lifesteal", "drain", "sustain", "leech"],
+      "terms": ["heal", "restore", "drain"]
+    },
+    {
+      "key": "flinch",
+      "label": "Flinch",
+      "aliases": ["flinch", "flinching", "cower", "hesitate"],
+      "terms": ["flinch"]
+    },
+    {
+      "key": "critical-hit",
+      "label": "Critical hit",
+      "aliases": ["crit", "crits", "critical"],
+      "terms": ["critical"]
+    },
+    {
+      "key": "recoil",
+      "label": "Recoil",
+      "aliases": ["recoil", "backlash"],
+      "terms": ["recoil"]
+    },
+    {
+      "key": "rain",
+      "label": "Rain",
+      "aliases": ["rain", "rainy", "drizzle", "downpour", "monsoon"],
+      "terms": ["rain"]
+    },
+    {
+      "key": "sun",
+      "label": "Harsh sunlight",
+      "aliases": ["sun", "sunny", "sunlight", "drought"],
+      "terms": ["sunlight", "sunny"]
+    },
+    {
+      "key": "sandstorm",
+      "label": "Sandstorm",
+      "aliases": ["sandstorm", "sand", "sandy"],
+      "terms": ["sandstorm"]
+    },
+    {
+      "key": "hail",
+      "label": "Hail",
+      "aliases": ["hail", "hailstorm", "snow", "snowy"],
+      "terms": ["hail"]
+    }
+  ]
+}
