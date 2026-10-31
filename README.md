@@ -249,6 +249,7 @@ Also works: `chu`, `legendary fire`, `heaviest`, `pokemon with levitate`, `water
 2. **Run the held-out queries** listed in [docs/queries.md](docs/queries.md) (written from the dataset, not tuned against) and report the result next to the golden suite. Add `or` between types.
 3. **Measure embeddings** (pgvector, a local model, fallback to lexical) against that set; keep them only if they win by enough to justify a service.
 4. **A small type chart**, if extra data is allowed.
+5. **A pluggable parser** (vocabulary as data, one filter rule for every facet): [proposal](docs/design.md#proposal-a-pluggable-data-driven-parser).
 
 ## Reference
 

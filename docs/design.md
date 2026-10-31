@@ -1,6 +1,6 @@
 # Design notes
 
-The deep dives behind the [README](../README.md), in three overview sections (how search works, stack choices, search scope) followed by the build-order notes: data and schema, the store, query optimization, the parser, retrieval, the concept map, the engine, the web UI, the golden suite, hardening, logging and code conventions. Read them if you want the reasoning behind a choice; the README alone is enough to run and judge the project.
+The deep dives behind the [README](../README.md), in three overview sections (how search works, stack choices, search scope) followed by the build-order notes: data and schema, the store, query optimization, the parser (and a proposal for a pluggable one), retrieval, the concept map, the engine, the web UI, the golden suite, hardening, logging and code conventions. Read them if you want the reasoning behind a choice; the README alone is enough to run and judge the project.
 
 ## How search works, step by step
 
@@ -167,6 +167,83 @@ move effects, so the retrievers decide how to combine types, terms and the full
 token list. `Interpretation()` returns short phrases ("type: electric", "sorted
 by speed") so the UI can show users how their query was read.
 
+## Proposal: a pluggable, data-driven parser
+
+**Status: design only, not built.** Ticket #29. It answers "what if this were not a Pokédex?".
+
+### Where the parser stands today
+
+`search.Parse` mixes two things in one package:
+
+| Part | Where | Domain-specific? |
+|---|---|---|
+| **Grammar**: negation (`not`, `!`, `-`), `X vs Y`, `top N`, "gen N", hyphen retry, notes, too-short input | `parse.go` | No |
+| **Vocabulary**: types, colours, stat adjectives, French type names, kind words, strategy words, stopwords | `vocab.go`, Go maps | Yes |
+| **Filters it fills in**: `Types`, `NotTypes`, `Color`, `Legendary`, `Sort` | `query.go` | Yes (field names) |
+
+The grammar is generic. The vocabulary is a handful of package-level maps that the grammar reads directly.
+
+### The idea
+
+Pass the vocabulary in instead of reading globals: `Parse(raw, domain)`.
+
+```go
+type Domain struct {
+    Kinds      map[string]Kind        // "move", "moves" -> moves
+    Facets     []Facet                // filterable columns
+    Sorts      map[string]SortIntent  // "fast" -> speed, descending
+    Stopwords  map[string]bool
+    Strategy   map[string]bool
+    Aliases    map[string]string      // "feu" -> "fire", "grey" -> "gray"
+}
+
+type Facet struct {
+    Name   string              // "type", "colour"
+    Column string              // "pokemon_types.type", "pokemon.color"
+    Values map[string]string   // word -> canonical value
+    Multi  bool                // several values allowed ("fire flying")
+}
+```
+
+`Query.Types`, `NotTypes` and `Color` become `Filters map[string]FacetFilter{In, NotIn []string}`. The store builds its `WHERE` clauses from the same `Facet` list, so adding a facet means one entry, not a new field, a new parse branch and a new store parameter.
+
+### What it would give
+
+| Gain | Detail |
+|---|---|
+| **Vocabulary without a code change** | A new facet (habitat, shape) or a synonym is a config entry. Today it is a Go edit, a test and a rebuild. |
+| **Facet values from the data** | `SELECT DISTINCT type` and `SELECT DISTINCT color` fill `Facet.Values`, so the hand-written type and colour maps disappear and cannot drift from the dataset. |
+| **One negation and filter rule for every facet** | `!habitat-cave` or `not pink` work the same way as `not electric`, with the same notes and the same "matches nothing" explanation. |
+| **A safety net already exists** | The parser tests and the golden suite pin today's behaviour. The refactor must keep both at 100% with the Pokémon `Domain` plugged in, which proves nothing regressed. |
+| **A path to another dataset** | Same parser, new `Domain`, for example for movies or recipes. |
+
+### What stays hand-written
+
+- **Sort adjectives** (`fast`, `bulky`, `heaviest`): language cannot be derived from a column. They stay in YAML or JSON next to the domain, and the "light"/"short" pitfall (also move names) shows they need a human decision.
+- **Concepts** (`put opponent to sleep` to moves): already data-driven in the `concepts*` tables; they would load the same way.
+- **Languages other than English**: still an explicit alias list per language.
+
+### How it would be loaded
+
+1. **At startup**: read `domain.yaml`, then fill facet values from the database, then validate (every facet column must exist and be indexed, or the app refuses to start, like the plan guard).
+2. **Optionally reloaded**: re-run the `DISTINCT` queries on a signal or after an import. No hot-reload of code is needed or wanted: the parser stays pure, it only receives a different `Domain` value.
+
+### What it would not give
+
+- **Not a generic app.** The store queries, plan guard, importer, migrations and views (rarity cards, the battle table) are all Pokémon-specific. Making those generic is close to a rewrite, and the plan guard exists precisely because every query was written and indexed by hand.
+- **No user-defined grammar.** Filters, negation and sorting are fixed behaviours; only the words they react to are configurable.
+
+### Cost and order of work
+
+About one day for the parser alone:
+
+1. Move `vocab.go` into a `Domain` value for Pokémon and pass it to `Parse`. No behaviour change: tests stay green untouched.
+2. Replace `Types`/`NotTypes`/`Color` with `Filters`, and let the store read `Facet`.
+3. Fill facet values from the database; delete the hand-written maps.
+4. Move the sort and stop words to config; add a startup validation.
+
+Each step is a commit that keeps `make eval` at 100%. Not done for this assessment because it adds indirection to a working parser without improving a single Pokémon query; it pays off only with a second dataset.
+
 ## Lexical retriever
 
 `search.Lexical` turns a parsed query into ranked results across Pokémon, moves
@@ -324,7 +401,7 @@ JavaScript; HTMX only removes the full reload.
 
 | Route | Purpose |
 |---|---|
-| `/` | search box and four example questions |
+| `/` | search box, a hint on leaving things out (`not`, `!`, `-`) and four example questions |
 | `/?q=...` | results; the URL is shareable and reloadable |
 | `/compare?p=raichu&p=jolteon` | battle table (side by side) for up to three Pokémon |
 | `/healthz`, `/readyz` | liveness, and readiness (pings the database) |
