@@ -1,6 +1,71 @@
 # Design notes
 
-The deep dives behind the [README](../README.md), in build order: data and schema, the store, query optimization, the parser, retrieval, the concept map, the engine, the web UI, the golden suite, hardening, logging and code conventions. Read them if you want the reasoning behind a choice; the README alone is enough to run and judge the project.
+The deep dives behind the [README](../README.md), in three overview sections (how search works, stack choices, search scope) followed by the build-order notes: data and schema, the store, query optimization, the parser, retrieval, the concept map, the engine, the web UI, the golden suite, hardening, logging and code conventions. Read them if you want the reasoning behind a choice; the README alone is enough to run and judge the project.
+
+## How search works, step by step
+
+```
+ query ─▶ 1 Parse ─▶ 2 Retrieve ─▶ 3 Fuse ─▶ 4 Expand the graph ─▶ 5 Group and explain ─▶ UI
+          rules       names         ranks     move or ability         reasons, evidence,
+          only        trigrams      merged    ─▶ Pokémon              strategy bundles
+                      full-text
+                      criteria
+                      concept map
+```
+
+| Step | What happens | Why this way |
+|---|---|---|
+| 1. Parse | Rules read the text into types, a stat sort, entity kinds, "top N" and strategy words. | Pure and deterministic, so every reading can be explained and tested. No model needed. |
+| 2. Retrieve | Postgres answers in parallel lists: exact and prefix names, trigram names for typos, criteria listings, and weighted full-text over effects and descriptions. The concept map first expands words such as `asleep` into what the data says (`puts the target to sleep`). | One engine does names, typos and meaning. Indexes (GIN full-text and trigram) keep every query fast. |
+| 3. Fuse | Reciprocal rank fusion merges the lists by rank, not by raw score. | Trigram similarity, text rank and stat sorts are not comparable, but ranks are. An item found by several sources rises. |
+| 4. Expand | The top matched moves and abilities lead, with one batched query each, to the Pokémon that learn or have them. The strategy concept adds the types it favours (rain: Water). | This is what turns "a list of moves" into "who can do it". Every link is kept as evidence. |
+| 5. Group and explain | Results are grouped by kind (or by role for a strategy), ordered by relevance, and each carries its reasons. | Users trust a result they can check. |
+
+Two properties hold throughout: a search costs a **constant number of queries**
+(about a dozen, however many results), and every query must be able to use an
+index. Both are enforced by tests. The sections below go deeper into each step.
+
+
+## Stack choices and what was left out
+
+**Stack choice.** Postgres covers names, typos, full-text and relations in one engine, and the plan guard can prove every query uses an index. At this size (429 documents) a single binary with embedded SQLite is a credible alternative and would need no Docker: FTS5 has a trigram option for fragments, and typos could be handled by edit distance in memory. I did not try it, so I cannot say it would match the current ranking; Postgres gives weighted, phrase-aware full-text ranking and the query-plan guard out of the box. I chose it for those reasons and accept the Docker prerequisite as the price.
+
+**Left out on purpose**
+
+- **Redis or any cache:** the data is static and small, and indexed Postgres answers in milliseconds. A cache adds a service and an invalidation problem for nothing measurable.
+- **Embeddings, for now:** the golden-suite misses turned out to be structural or vocabulary gaps that a rule fixed exactly and explainably, so vectors did not pay for themselves. They are kept as a measured option, judged on the golden suite (see next steps).
+- **A graph extension such as Apache AGE:** the graph is one hop deep with about 4,300 edges, which a join handles. AGE would need its own Postgres image, Cypher instead of Bob, and weaker index checks. It would earn its place with evolution order or type-effectiveness paths, which this dataset does not have.
+
+## Search scope: what it can and cannot do
+
+**You can**
+
+- Search by **name**, partial name, fragment or typo (`bulba`, `pikchu`, `chu`, `mr mime`, `nidoran`).
+- Search by **criteria**: a type plus a stat or size word (`fast electric`, `bulky water`, `strongest fire`, `top 3 fastest`, `heaviest`, `tallest water`), or `legendary` (`legendary fire`).
+- Search by **effect or intent** in plain words (`put opponent to sleep`, `paralyze`, `heal myself`, `burn`, `raise defense`, `one hit knock out`).
+- Ask who **has a move or ability** (`pokemon with levitate`, `which pokemon can learn thunder`).
+- Ask for a **group** (`starter`, `water starter`, `fossil pokemon`, `eeveelution`).
+- Ask a **strategy** question (`rain team`, `sun team`, `paralysis team`) and get a bundle across categories.
+- **Battle (compare)** up to three Pokémon in a link you can share.
+- See **why** each result matched, and how your query was read.
+
+**You cannot (yet)**
+
+| Ask | What happens | Why |
+|---|---|---|
+| `weak against water`, `how to beat gyarados` | A list that ignores the intent. | The dataset has no type-effectiveness table, so the engine cannot answer matchup questions. It shows what it finds rather than refusing. |
+| `evolution of charmander` | Charmander and unrelated results. | Evolution order and conditions are not in the data. Each species carries a family id (`evolution_chain_id`), which could group families, but nothing uses it yet. |
+| `move that hits all enemies`, `swap places` | Loosely related moves. | Paraphrases outside the concept map fall back to word matching. This is the case embeddings could help, and it is why they are listed under next steps. |
+| `starter` | Base forms only (Bulbasaur, Charmander, Squirtle). | A collection is a fixed list of names, not inferred. |
+
+Ten queries that used to miss (ability and move lookups, `legendary`, `heaviest`,
+`raise defense`, `ohko`, `fire starter`, `chu` and others) are now fixed and are
+part of the golden suite.
+
+Data caveats, from the dataset itself: abilities are current PokéAPI
+associations, not Generation 1 (which had none), so some results use modern
+semantics; and the data has no Rain Dance move, so a rain team is built from
+abilities, weather-related moves and Water types. Both are shown honestly in the results.
 
 ## Data and schema
 
@@ -269,9 +334,8 @@ JavaScript; HTMX only removes the full reload.
   external request is optional Google Fonts; without network the page falls back
   to system fonts. Images are not used at all, so the sprites in the dataset are
   never needed. The Pokémon tiles are drawn from the dex number and type.
-- **Design deviation:** the skill's default is DaisyUI, which needs either a CDN
-  or a Node build. I wrote a small hand-made stylesheet instead (about 15 KB)
-  to keep `docker compose up` offline and dependency-free. Templ output is
+- **No CSS framework:** a small hand-made stylesheet (about 15 KB) keeps
+  `docker compose up` offline, with no CDN or Node build. Templ output is
   committed (`*_templ.go`), so building needs no `templ` binary; run
   `make generate` after editing a `.templ` file.
 
