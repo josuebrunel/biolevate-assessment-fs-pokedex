@@ -14,6 +14,7 @@
   - [Run it](#run-it)
   - [Stack](#stack)
   - [Data and schema](#data-and-schema)
+  - [Store layer](#store-layer)
   - [Commands](#commands)
 
 # Assessment
@@ -131,6 +132,7 @@ AI-use disclosure land here as they are built.
 | Project scaffold + CI | done |
 | [Docker Compose + Goose schema](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/2) | done |
 | [Import command](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/3) | done |
+| [Store layer](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/4) | done |
 | Search (query parsing, retrieval, concepts, graph expansion) | planned |
 | Web UI and compare view | planned |
 | Golden-query suite, hardening, write-up | planned |
@@ -174,6 +176,25 @@ and relations are rebuilt, so running it twice leaves identical row counts.
 
 One data caveat: abilities come from current PokéAPI associations, not Gen 1
 (which had none), so ability results can include modern-game semantics.
+
+## Store layer
+
+`internal/store` is the read-only, Bob-built data access layer. It offers
+retrieval primitives and deliberately no ranking policy; that belongs to the
+search package built on top.
+
+| Primitive | What it does |
+|---|---|
+| `NameSearch` | prefix first, then trigram typo tolerance, for Pokémon, moves and abilities; spaces read as hyphens (`mr m` finds `mr-mime`) |
+| `TextSearch` | weighted full-text over `search_doc`, OR of the supplied terms, ranked by `ts_rank_cd` |
+| `PokemonList` | filter by type(s), sort by a stat or base stat total |
+| `PokemonGetMany`, `MoveGetMany`, `AbilityGetMany`, `PokemonGetByName` | hydration in a constant number of queries |
+| `PokemonByMoves`, `PokemonByAbilities` | graph lookups from moves or abilities to Pokémon |
+
+All SQL is built with bound parameters. Table and sort-column names come from
+fixed allowlists, never from user input, and `LIKE` wildcards in queries are
+escaped. Tests run against the real dataset and assert query counts, so an N+1
+regression fails the build.
 
 ## Commands
 
