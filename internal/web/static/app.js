@@ -54,6 +54,17 @@
   document.addEventListener('click', function (e) {
     var tab = e.target.closest && e.target.closest('[role="tab"]');
     if (tab) select(tab.parentNode, tab);
+
+    // "Also found" and "Next" links: switch to that tab and bring the bar into view.
+    var go = e.target.closest && e.target.closest('[data-goto]');
+    var target = go && document.getElementById(go.getAttribute('data-goto'));
+    if (target && !target.parentNode.hidden) {
+      e.preventDefault();
+      select(target.parentNode, target);
+      var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      target.parentNode.scrollIntoView({ block: 'start', behavior: calm ? 'auto' : 'smooth' });
+      target.focus({ preventScroll: true });
+    }
   });
   document.addEventListener('keydown', function (e) {
     var tab = e.target.closest && e.target.closest('[role="tab"]');

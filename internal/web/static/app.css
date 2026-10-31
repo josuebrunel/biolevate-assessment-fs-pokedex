@@ -252,6 +252,10 @@ footer .wrap { display: grid; gap: 6px; }
 .tabs[hidden] { display: none; }
 .tab { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; min-height: 48px; padding: 4px 8px; border: 3px solid var(--edge); border-bottom-width: 5px; border-radius: 14px; background: var(--panel); color: var(--ink); font-weight: 800; font-size: .95rem; cursor: pointer; }
 .tab[aria-selected="true"] { background: var(--panel-2); border-color: var(--edge-hi); }
+.chen .also { margin: 6px 0 0; font-weight: 800; }
+.chen .also a, .next-tab a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 2px; font-weight: 800; }
+.chen .also a:hover, .next-tab a:hover { text-decoration-color: var(--accent); }
+.next-tab { margin: 14px 0 0; text-align: center; }
 .tab .pill { padding: 0 8px; }
 .group[role="tabpanel"][hidden] { display: none; }
 .group[role="tabpanel"] > header { margin-top: 8px; }

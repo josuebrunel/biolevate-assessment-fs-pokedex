@@ -141,9 +141,18 @@ func TestResultTabs(t *testing.T) {
 		t.Error("the first group should be the selected tab, with the bar before the panels")
 	}
 
+	for _, want := range []string{"Also found:", `href="#panel-1" data-goto="tab-1">1 pokémon</a>`, `Next: Pokémon (1) →`} {
+		if !strings.Contains(multi, want) {
+			t.Errorf("multi-kind results do not point to the other tabs: lacks %q", want)
+		}
+	}
+	if strings.Count(multi, "Next:") != 1 {
+		t.Error("only the first of two panels links to a next one")
+	}
+
 	single := get(pageServer(t, &fakeSearch{resp: search.Response{Groups: []search.Group{pokemon}}}, &fakePokedex{}), "/?q=x", nil).Body.String()
-	if strings.Contains(single, `role="tablist"`) || strings.Contains(single, `role="tabpanel"`) {
-		t.Error("a single kind needs no tabs")
+	if strings.Contains(single, `role="tablist"`) || strings.Contains(single, `role="tabpanel"`) || strings.Contains(single, "Also found") || strings.Contains(single, "Next:") {
+		t.Error("a single kind needs no tabs or pointers to them")
 	}
 }
 

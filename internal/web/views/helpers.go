@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/a-h/templ"
+	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/search"
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
 )
 
@@ -146,6 +147,29 @@ func kindIcon(k store.Kind) string {
 		return "ability"
 	}
 	return "party"
+}
+
+// TabLink points at another result group: a tab's index and its label.
+type TabLink struct {
+	Index int
+	Label string
+}
+
+// otherTabs lists the groups after the first, for the "Also found" line.
+func otherTabs(gs []search.Group) []TabLink {
+	var out []TabLink
+	for i := 1; i < len(gs); i++ {
+		out = append(out, TabLink{i, fmt.Sprintf("%d %s", len(gs[i].Items), strings.ToLower(kindLabel(gs[i].Kind)))})
+	}
+	return out
+}
+
+// nextTab is the group after i, or nil for the last one.
+func nextTab(gs []search.Group, i int) *TabLink {
+	if i+1 >= len(gs) {
+		return nil
+	}
+	return &TabLink{i + 1, fmt.Sprintf("%s (%d)", kindLabel(gs[i+1].Kind), len(gs[i+1].Items))}
 }
 
 func tabID(i int) string   { return fmt.Sprintf("tab-%d", i) }

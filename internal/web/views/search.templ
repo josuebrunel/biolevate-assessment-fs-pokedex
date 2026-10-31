@@ -103,6 +103,17 @@ templ Results(query string, r search.Response) {
 						Here is what I found for “{ query }”. Every card says why it is here.
 					}
 				</p>
+				if len(r.Groups) > 1 {
+					<p class="also">
+						Also found:
+						for i, o := range otherTabs(r.Groups) {
+							if i > 0 {
+								·
+							}
+							<a href={ templ.SafeURL("#" + panelID(o.Index)) } data-goto={ tabID(o.Index) }>{ o.Label }</a>
+						}
+					</p>
+				}
 				for _, n := range r.Notes {
 					<p class="chen-note">{ n }</p>
 				}
@@ -133,7 +144,7 @@ templ Results(query string, r search.Response) {
 			</div>
 		}
 		for i, g := range r.Groups {
-			@Group(g, r.Query.Sort, i, len(r.Groups) > 1)
+			@Group(g, r.Query.Sort, i, len(r.Groups) > 1, nextTab(r.Groups, i))
 		}
 	</div>
 	if hasPokemon(r) {
@@ -153,7 +164,7 @@ templ Empty(query string) {
 	</div>
 }
 
-templ Group(g search.Group, sorted store.Stat, i int, tabbed bool) {
+templ Group(g search.Group, sorted store.Stat, i int, tabbed bool, next *TabLink) {
 	<section class="group" aria-label={ g.Title } { groupAttrs(i, tabbed)... }>
 		<header>
 			<h2>{ g.Title }</h2>
@@ -171,6 +182,9 @@ templ Group(g search.Group, sorted store.Stat, i int, tabbed bool) {
 					@EntityRow(it)
 				}
 			</div>
+		}
+		if next != nil {
+			<p class="next-tab"><a href={ templ.SafeURL("#" + panelID(next.Index)) } data-goto={ tabID(next.Index) }>Next: { next.Label } →</a></p>
 		}
 	</section>
 }
