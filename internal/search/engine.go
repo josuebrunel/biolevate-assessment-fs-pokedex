@@ -70,6 +70,7 @@ type Response struct {
 	Query          Query
 	Interpretation []string // short phrases describing how the query was understood
 	Concepts       []string // labels of the concepts that matched
+	Notes          []string // what could not be acted on, and why a search came back empty
 	Groups         []Group
 }
 
@@ -96,7 +97,10 @@ func (e *Engine) Search(ctx context.Context, input string, opts Options) (Respon
 	}
 
 	q := Parse(input)
-	resp := Response{Query: q, Interpretation: q.Interpretation()}
+	resp := Response{Query: q, Interpretation: q.Interpretation(), Notes: q.Notes}
+	if q.TooShort {
+		return resp, nil
+	}
 	var ex Expansion
 	if e.concepts != nil {
 		ex = e.concepts.Expand(q.Tokens)
@@ -115,12 +119,20 @@ func (e *Engine) Search(ctx context.Context, input string, opts Options) (Respon
 		return Response{}, fmt.Errorf("retrieve: %w", err)
 	}
 	if len(results) == 0 {
+		if len(q.Types) > 1 {
+			resp.Notes = append(resp.Notes, fmt.Sprintf("No Pokémon in this Pokédex is both %s.", strings.Join(q.Types, " and ")))
+		}
 		return resp, nil
 	}
 
-	candidates, err := e.expand(ctx, q, ex, results, perGroup)
-	if err != nil {
-		return Response{}, err
+	// A Pokémon found by its exact name needs no graph: following its description's
+	// words to unrelated moves only adds noise ("mr mime" is not about mimic).
+	candidates := expansion{evidence: map[int][]Evidence{}, moves: map[int]store.Move{}, abils: map[int]store.Ability{}, inTypes: map[int]bool{}}
+	if !exactPokemon(results[0]) {
+		candidates, err = e.expand(ctx, q, ex, results, perGroup)
+		if err != nil {
+			return Response{}, err
+		}
 	}
 	resp.Groups, err = e.groups(ctx, q, ex, results, candidates, perGroup)
 	if err != nil {
@@ -133,6 +145,11 @@ func (e *Engine) Search(ctx context.Context, input string, opts Options) (Respon
 	slog.DebugContext(ctx, "engine answered", "query", input, "groups", len(resp.Groups),
 		"concepts", resp.Concepts, "duration", time.Since(start))
 	return resp, nil
+}
+
+// exactPokemon reports whether r is a Pokémon matched by its exact name.
+func exactPokemon(r Result) bool {
+	return r.Kind == store.KindPokemon && slices.Contains(r.Reasons, "name matches")
 }
 
 // expansion holds the Pokémon reached through the graph and why.

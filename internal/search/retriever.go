@@ -157,6 +157,10 @@ func (l *Lexical) nameLists(ctx context.Context, q Query, kinds []store.Kind, fe
 			all = append(all, scored{candidate{kind, h.ID, h.Name, reason}, h.Score})
 		}
 	}
+	if len(all) == 0 && strings.Contains(phrase, "-") {
+		// "pi-ka-chu": hyphens are part of real names ("mr-mime"), so only drop them when nothing matched.
+		return l.nameLists(ctx, Query{Terms: []string{strings.ReplaceAll(phrase, "-", "")}}, kinds, fetch)
+	}
 	slices.SortStableFunc(all, func(a, b scored) int {
 		switch {
 		case a.score > b.score:
@@ -219,7 +223,7 @@ func (l *Lexical) criteriaLists(ctx context.Context, q Query, kinds []store.Kind
 	if l.expand != nil {
 		collection = l.expand(q.Tokens)
 	}
-	if len(q.Types) == 0 && q.Sort == "" && !q.Legendary && len(collection.Pokemon) == 0 {
+	if len(q.Types) == 0 && len(q.NotTypes) == 0 && q.Color == "" && q.Sort == "" && !q.Legendary && len(collection.Pokemon) == 0 {
 		return nil, nil
 	}
 	var lists []ranked
@@ -235,7 +239,7 @@ func (l *Lexical) criteriaLists(ctx context.Context, q Query, kinds []store.Kind
 			pokemon, err = l.collection(ctx, q, collection.Pokemon, sortBy)
 		} else {
 			pokemon, err = l.reader.PokemonList(ctx, store.PokemonListParams{
-				Types: q.Types, Legendary: q.Legendary, SortBy: sortBy, Ascending: q.Ascending, Limit: fetch,
+				Types: q.Types, NotTypes: q.NotTypes, Color: q.Color, Legendary: q.Legendary, SortBy: sortBy, Ascending: q.Ascending, Limit: fetch,
 			})
 		}
 		if err != nil {
@@ -248,6 +252,12 @@ func (l *Lexical) criteriaLists(ctx context.Context, q Query, kinds []store.Kind
 			}
 			for _, t := range q.Types {
 				reasons = append(reasons, "type: "+t)
+			}
+			for _, t := range q.NotTypes {
+				reasons = append(reasons, "not type: "+t)
+			}
+			if q.Color != "" {
+				reasons = append(reasons, "colour: "+q.Color)
 			}
 			if q.Legendary {
 				reasons = append(reasons, "legendary")
@@ -286,6 +296,14 @@ func (l *Lexical) collection(ctx context.Context, q Query, names []string, sortB
 			if !slices.Contains(p.Types, t) {
 				return true
 			}
+		}
+		for _, t := range q.NotTypes {
+			if slices.Contains(p.Types, t) {
+				return true
+			}
+		}
+		if q.Color != "" && (p.Color == nil || *p.Color != q.Color) {
+			return true
 		}
 		return q.Legendary && !p.IsLegendary && !p.IsMythical
 	})

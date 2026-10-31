@@ -95,6 +95,9 @@ templ Results(query string, r search.Response) {
 						Here is what I found for “{ query }”. Every card says why it is here.
 					}
 				</p>
+				for _, n := range r.Notes {
+					<p class="chen-note">{ n }</p>
+				}
 				if len(r.Interpretation) > 0 || len(r.Concepts) > 0 {
 					<div class="chips">
 						for _, i := range r.Interpretation {

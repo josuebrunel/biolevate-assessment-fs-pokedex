@@ -65,7 +65,7 @@ var stopwords = map[string]bool{
 	"what": true, "which": true, "how": true, "do": true, "does": true, "it": true, "its": true, "be": true,
 	"get": true, "way": true, "ways": true, "use": true, "type": true, "types": true, "top": true,
 	"compare": true, "vs": true, "versus": true,
-	"put": true, "make": true, "cause": true, "causes": true, "opponent": true, "enemy": true, "foe": true,
+	"but": true, "put": true, "make": true, "cause": true, "causes": true, "opponent": true, "enemy": true, "foe": true,
 }
 
 // statNouns are stat words that name the stat itself, as in "raise defense",
@@ -82,3 +82,15 @@ var effectVerbs = map[string]bool{
 	"decrease": true, "decreases": true, "drop": true, "drops": true, "reduce": true, "reduces": true,
 	"buff": true, "debuff": true,
 }
+
+// negationWords negate the next content word: "not electric", "without flying".
+var negationWords = map[string]bool{"not": true, "non": true, "except": true, "without": true, "excluding": true}
+
+// colourWords are the species colours in the dataset ("grey" is an alias).
+var colourWords = map[string]string{
+	"red": "red", "blue": "blue", "green": "green", "yellow": "yellow", "brown": "brown",
+	"purple": "purple", "pink": "pink", "gray": "gray", "grey": "gray", "white": "white", "black": "black",
+}
+
+// generationWords introduce a generation number ("gen 1"). The whole dataset is generation 1.
+var generationWords = map[string]bool{"gen": true, "generation": true}

@@ -73,6 +73,12 @@ func TestChallengesEndToEnd(t *testing.T) {
 		}
 	})
 
+	t.Run("notes are shown", func(t *testing.T) {
+		if body := search("fire water"); !strings.Contains(body, "No Pokémon in this Pokédex is both fire and water.") {
+			t.Error("the empty state should explain the impossible type pair")
+		}
+	})
+
 	t.Run("nothing matches", func(t *testing.T) {
 		if body := search("zzzqqq"); !strings.Contains(body, "Nothing matched") {
 			t.Error("expected the empty state")

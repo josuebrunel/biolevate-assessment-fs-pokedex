@@ -34,7 +34,7 @@ func TestMigrate(t *testing.T) {
 		const q = `SELECT count(*) FROM pg_indexes WHERE schemaname = 'public' AND indexname IN
 			('pokemon_hp_idx','pokemon_attack_idx','pokemon_defense_idx','pokemon_special_attack_idx',
 			 'pokemon_special_defense_idx','pokemon_speed_idx','pokemon_total_idx',
-			 'pokemon_weight_idx','pokemon_height_idx','pokemon_weight_asc_idx','pokemon_height_asc_idx','pokemon_legendary_idx')`
+			 'pokemon_weight_idx','pokemon_height_idx','pokemon_weight_asc_idx','pokemon_height_asc_idx','pokemon_legendary_idx','pokemon_color_idx')`
 		if err := conn.QueryRowContext(ctx, q).Scan(&n); err != nil {
 			t.Fatal(err)
 		}
@@ -42,23 +42,24 @@ func TestMigrate(t *testing.T) {
 	}
 
 	// Each step records the tables (6 entity + 5 concept) and the sort and
-	// filter indexes (7 stat + 5 size and legendary) that must exist afterwards.
+	// filter indexes (7 stat + 5 size and legendary + 1 colour) that must exist afterwards.
 	steps := []struct {
 		name    string
 		action  db.MigrateAction
 		tables  int
 		sortIdx int
 	}{
-		{"up creates the schema", db.MigrateUp, 11, 12},
-		{"up is idempotent", db.MigrateUp, 11, 12},
+		{"up creates the schema", db.MigrateUp, 11, 13},
+		{"up is idempotent", db.MigrateUp, 11, 13},
+		{"down rolls back the colour index", db.MigrateDown, 11, 12},
 		{"down rolls back concept collections", db.MigrateDown, 10, 12},
 		{"down rolls back size and legendary indexes", db.MigrateDown, 10, 7},
 		{"down rolls back concept types", db.MigrateDown, 9, 7},
 		{"down rolls back the concept tables", db.MigrateDown, 6, 7},
 		{"down rolls back the stat sort indexes", db.MigrateDown, 6, 0},
-		{"up re-applies", db.MigrateUp, 11, 12},
+		{"up re-applies", db.MigrateUp, 11, 13},
 		{"revert rolls back everything", db.MigrateRevert, 0, 0},
-		{"up after revert", db.MigrateUp, 11, 12},
+		{"up after revert", db.MigrateUp, 11, 13},
 	}
 	for _, s := range steps {
 		if err := db.Migrate(ctx, conn, s.action); err != nil {

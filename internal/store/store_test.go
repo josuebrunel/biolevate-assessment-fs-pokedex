@@ -263,6 +263,37 @@ func TestStore(t *testing.T) {
 		}
 	})
 
+	t.Run("excluded types and colour", func(t *testing.T) {
+		got, err := s.PokemonList(ctx, store.PokemonListParams{NotTypes: []string{"electric"}, SortBy: store.StatTotal, Limit: 200})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, p := range got {
+			if slices.Contains(p.Types, "electric") {
+				t.Errorf("%s is electric but electric was excluded", p.Name)
+			}
+		}
+		if len(got) < 100 {
+			t.Errorf("excluding electric left %d Pokémon, want most of them", len(got))
+		}
+		both, err := s.PokemonList(ctx, store.PokemonListParams{Types: []string{"electric"}, NotTypes: []string{"flying"}, SortBy: store.StatSpeed, Limit: 20})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if names := pokemonNames(both); slices.Contains(names, "zapdos") || !slices.Contains(names, "jolteon") {
+			t.Errorf("electric but not flying = %v", names)
+		}
+		red, err := s.PokemonList(ctx, store.PokemonListParams{Color: "red", SortBy: store.StatTotal, Limit: 5})
+		if err != nil || len(red) == 0 {
+			t.Fatalf("red Pokémon = %d (%v)", len(red), err)
+		}
+		for _, p := range red {
+			if p.Color == nil || *p.Color != "red" {
+				t.Errorf("%s is not red", p.Name)
+			}
+		}
+	})
+
 	t.Run("size sorts", func(t *testing.T) {
 		heavy, err := s.PokemonList(ctx, store.PokemonListParams{SortBy: store.StatWeight, Limit: 2})
 		if err != nil {

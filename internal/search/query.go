@@ -18,6 +18,8 @@ type Query struct {
 	Tokens    []string     // content words in order, stopwords removed
 	Terms     []string     // Tokens left after types, stats, kinds and strategy words are consumed
 	Types     []string     // type filters, in order of appearance
+	NotTypes  []string     // types to exclude ("not electric")
+	Color     string       // species colour filter ("red pokemon")
 	Sort      store.Stat   // requested sort, empty when none
 	Ascending bool         // direction for Sort
 	Legendary bool         // only legendary and mythical Pokémon
@@ -26,6 +28,8 @@ type Query struct {
 	Limit     int          // from "top N", zero when unset
 	Strategy  bool         // "team", "strategy": an exploratory, multi-entity question
 	Versus    []string     // sides of "X vs Y" / "compare X and Y", for the compare view
+	Notes     []string     // things the parser understood but could not act on, shown to the user
+	TooShort  bool         // a single letter: too little to search for
 }
 
 // Interpretation describes how the query was understood, one short phrase per
@@ -34,6 +38,12 @@ func (q Query) Interpretation() []string {
 	var out []string
 	for _, t := range q.Types {
 		out = append(out, "type: "+t)
+	}
+	for _, t := range q.NotTypes {
+		out = append(out, "not type: "+t)
+	}
+	if q.Color != "" {
+		out = append(out, "colour: "+q.Color)
 	}
 	if q.Legendary {
 		out = append(out, "legendary")

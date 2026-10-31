@@ -1222,5 +1222,185 @@
     "within": 3
    }
   ]
+ },
+ {
+  "name": "negated type",
+  "category": "odd input",
+  "query": "not electric",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "mewtwo",
+    "within": 3
+   }
+  ],
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "jolteon",
+    "within": 50
+   },
+   {
+    "kind": "pokemon",
+    "name": "zapdos",
+    "within": 50
+   }
+  ]
+ },
+ {
+  "name": "negated stat word flips the sort",
+  "category": "odd input",
+  "query": "electric but not fast",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "magnemite",
+    "within": 2
+   }
+  ],
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "electrode",
+    "within": 5
+   }
+  ]
+ },
+ {
+  "name": "negation of the second type only",
+  "category": "odd input",
+  "query": "electric not flying",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "jolteon",
+    "within": 3
+   }
+  ],
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "zapdos",
+    "within": 50
+   }
+  ]
+ },
+ {
+  "name": "hyphenated name spelling",
+  "category": "odd input",
+  "query": "pi-ka-chu",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "pikachu",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "colour: red",
+  "category": "odd input",
+  "query": "red pokemon",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "charizard",
+    "within": 3
+   }
+  ],
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "squirtle",
+    "within": 50
+   }
+  ]
+ },
+ {
+  "name": "colour: blue",
+  "category": "odd input",
+  "query": "blue",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "blastoise",
+    "within": 5
+   }
+  ],
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "charizard",
+    "within": 50
+   }
+  ]
+ },
+ {
+  "name": "generation words are not names",
+  "category": "odd input",
+  "query": "gen 1 starter",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "bulbasaur",
+    "within": 3
+   }
+  ],
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "gengar",
+    "within": 50
+   }
+  ]
+ },
+ {
+  "name": "conflicting stat words",
+  "category": "odd input",
+  "query": "fastest slowest",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "electrode",
+    "within": 1
+   }
+  ]
+ },
+ {
+  "name": "exact name stops graph noise",
+  "category": "odd input",
+  "query": "mr mime",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "mr-mime",
+    "within": 1
+   }
+  ],
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "bulbasaur",
+    "within": 50
+   }
+  ]
+ },
+ {
+  "name": "type pair no Pokémon has",
+  "category": "odd input",
+  "query": "fire water",
+  "expect_empty": true
+ },
+ {
+  "name": "single letter",
+  "category": "odd input",
+  "query": "e",
+  "expect_empty": true
+ },
+ {
+  "name": "bare kind word",
+  "category": "odd input",
+  "query": "pokemon",
+  "expect_empty": true
  }
 ]

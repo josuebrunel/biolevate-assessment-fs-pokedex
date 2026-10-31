@@ -206,6 +206,8 @@ var nullableSorts = map[Stat]bool{StatHeight: true, StatWeight: true}
 // PokemonListParams are the criteria for PokemonList.
 type PokemonListParams struct {
 	Types     []string // Pokémon must have every listed type
+	NotTypes  []string // Pokémon must have none of the listed types
+	Color     string   // species colour, empty for any
 	Legendary bool     // only legendary and mythical Pokémon
 	SortBy    Stat     // empty sorts by id
 	Ascending bool     // stats sort descending (best first) unless set
@@ -224,6 +226,17 @@ func (s *Store) PokemonList(ctx context.Context, p PokemonListParams) ([]Pokemon
 		mods = append(mods, sm.Where(psql.Raw(
 			"id IN (SELECT pokemon_id FROM pokemon_types WHERE type IN ("+placeholders+
 				") GROUP BY pokemon_id HAVING count(DISTINCT type) = ?)", args...)))
+	}
+
+	if len(p.NotTypes) > 0 {
+		types := sortedUnique(p.NotTypes)
+		placeholders := strings.TrimSuffix(strings.Repeat("?, ", len(types)), ", ")
+		mods = append(mods, sm.Where(psql.Raw(
+			"id NOT IN (SELECT pokemon_id FROM pokemon_types WHERE type IN ("+placeholders+"))", anySlice(types)...)))
+	}
+
+	if p.Color != "" {
+		mods = append(mods, sm.Where(psql.Quote("color").EQ(psql.Arg(p.Color))))
 	}
 
 	if p.Legendary {

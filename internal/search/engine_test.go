@@ -26,6 +26,14 @@ func group(t *testing.T, r search.Response, title string) search.Group {
 	return search.Group{}
 }
 
+func itemNames(g search.Group) []string {
+	var out []string
+	for _, it := range g.Items {
+		out = append(out, it.Name)
+	}
+	return out
+}
+
 func item(t *testing.T, g search.Group, name string) search.Item {
 	t.Helper()
 	for _, it := range g.Items {
@@ -69,6 +77,48 @@ func TestEngine(t *testing.T) {
 		}
 		return resp
 	}
+
+	// Odd input: the engine says what it could not do instead of returning a silent list.
+	t.Run("notes explain what was not done", func(t *testing.T) {
+		tests := []struct {
+			input string
+			want  string
+			empty bool
+		}{
+			{"fire water", "No Pokémon in this Pokédex is both fire and water.", true},
+			{"e", "Type at least two letters to search.", true},
+			{"moves", "Add a name, a type, a stat or an effect to narrow down the moves.", false},
+			{"fastest slowest", "Sorted by speed first; “slowest” was ignored.", false},
+			{"gen 3 water", "This Pokédex only has generation 1, so “gen 3” was ignored.", false},
+		}
+		for _, tt := range tests {
+			resp := searchFor(t, tt.input, search.Options{PerGroup: 5})
+			if !slices.Contains(resp.Notes, tt.want) {
+				t.Errorf("%q notes = %v, want %q", tt.input, resp.Notes, tt.want)
+			}
+			if tt.empty && len(resp.Groups) != 0 {
+				t.Errorf("%q returned %d groups, want none", tt.input, len(resp.Groups))
+			}
+		}
+	})
+
+	t.Run("negation, colour and exact names", func(t *testing.T) {
+		resp := searchFor(t, "not electric", search.Options{PerGroup: 10})
+		for _, it := range group(t, resp, "Pokémon").Items {
+			if slices.Contains(it.Pokemon.Types, "electric") {
+				t.Errorf("%s is electric in a 'not electric' search", it.Name)
+			}
+		}
+		red := group(t, searchFor(t, "red pokemon", search.Options{PerGroup: 10}), "Pokémon")
+		if item(t, red, "charizard").Pokemon == nil {
+			t.Error("charizard missing from red Pokémon")
+		}
+		// An exact name does not follow the description's words into unrelated moves.
+		mime := searchFor(t, "mr mime", search.Options{PerGroup: 10})
+		if names := itemNames(group(t, mime, "Pokémon")); !slices.Equal(names, []string{"mr-mime"}) {
+			t.Errorf("mr mime = %v, want only mr-mime", names)
+		}
+	})
 
 	// Challenge 3: discover an answer without knowing its vocabulary.
 	t.Run("sleep: ways to do it, and who can", func(t *testing.T) {

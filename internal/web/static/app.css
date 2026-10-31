@@ -264,3 +264,6 @@ footer .wrap { display: grid; gap: 6px; }
   .tab { flex-direction: column; flex-wrap: nowrap; gap: 2px; line-height: 1.15; }
   .tab .ico { display: none; }
 }
+
+.chen .chen-note { margin-top: 6px; font-weight: 600; color: #3a40a8; }
+.chen .chen-note::before { content: "ℹ "; }
