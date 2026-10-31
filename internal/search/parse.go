@@ -81,12 +81,16 @@ func Parse(raw string) Query {
 				if t := strings.TrimSuffix(w, "-type"); !slices.Contains(q.NotTypes, t) {
 					q.NotTypes = append(q.NotTypes, t)
 				}
+			case colourWords[w] != "":
+				if c := colourWords[w]; !slices.Contains(q.NotColors, c) {
+					q.NotColors = append(q.NotColors, c)
+				}
 			case statWords[w] != statIntent{}: // "not fast" means slow
 				if q.Sort == "" {
 					q.Sort, q.Ascending = statWords[w].stat, !statWords[w].ascending
 				}
 			default:
-				q.Notes = append(q.Notes, fmt.Sprintf("“not %s” was ignored: negation only works with types and stat words (“not electric”, “not fast”).", w))
+				q.Notes = append(q.Notes, fmt.Sprintf("“not %s” was ignored: negation only works with types, colours and stat words (“not electric”, “not red”, “not fast”).", w))
 			}
 			continue
 		}
@@ -132,7 +136,7 @@ func Parse(raw string) Query {
 	case len(q.Tokens) == 1 && utf8.RuneCountInString(q.Tokens[0]) == 1 && len(q.Types) == 0:
 		q.TooShort = true
 		q.Notes = append(q.Notes, "Type at least two letters to search.")
-	case len(q.Kinds) > 0 && len(q.Terms) == 0 && len(q.Types) == 0 && len(q.NotTypes) == 0 && q.Color == "" &&
+	case len(q.Kinds) > 0 && len(q.Terms) == 0 && len(q.Types) == 0 && len(q.NotTypes) == 0 && q.Color == "" && len(q.NotColors) == 0 &&
 		q.Sort == "" && !q.Legendary && q.Limit == 0:
 		q.Notes = append(q.Notes, fmt.Sprintf("Add a name, a type, a stat or an effect to narrow down the %s.", kindWord(q.Kinds[0])))
 	}

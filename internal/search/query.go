@@ -21,6 +21,7 @@ type Query struct {
 	Types     []string     // type filters, in order of appearance
 	NotTypes  []string     // types to exclude ("not electric")
 	Color     string       // species colour filter ("red pokemon")
+	NotColors []string     // colours to exclude ("not red")
 	Sort      store.Stat   // requested sort, empty when none
 	Ascending bool         // direction for Sort
 	Legendary bool         // only legendary and mythical Pokémon
@@ -35,7 +36,7 @@ type Query struct {
 
 // pokemonFilters reports whether the query filters Pokémon by type, colour or rarity.
 func (q Query) pokemonFilters() bool {
-	return len(q.Types) > 0 || len(q.NotTypes) > 0 || q.Color != "" || q.Legendary
+	return len(q.Types) > 0 || len(q.NotTypes) > 0 || q.Color != "" || len(q.NotColors) > 0 || q.Legendary
 }
 
 // allows reports whether p passes the query's type, colour and legendary filters.
@@ -53,6 +54,9 @@ func (q Query) allows(p store.Pokemon) bool {
 	if q.Color != "" && (p.Color == nil || *p.Color != q.Color) {
 		return false
 	}
+	if p.Color != nil && slices.Contains(q.NotColors, *p.Color) {
+		return false
+	}
 	return !q.Legendary || p.IsLegendary || p.IsMythical
 }
 
@@ -65,6 +69,9 @@ func (q Query) filterPhrase() string {
 	parts = append(parts, q.Types...)
 	for _, t := range q.NotTypes {
 		parts = append(parts, "non-"+t)
+	}
+	for _, c := range q.NotColors {
+		parts = append(parts, "non-"+c)
 	}
 	if q.Legendary {
 		parts = append(parts, "legendary")
@@ -84,6 +91,9 @@ func (q Query) Interpretation() []string {
 	}
 	if q.Color != "" {
 		out = append(out, "colour: "+q.Color)
+	}
+	for _, c := range q.NotColors {
+		out = append(out, "not colour: "+c)
 	}
 	if q.Legendary {
 		out = append(out, "legendary")

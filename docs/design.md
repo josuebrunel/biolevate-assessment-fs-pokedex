@@ -46,7 +46,7 @@ index. Both are enforced by tests. The sections below go deeper into each step.
 - Ask who **has a move or ability** (`pokemon with levitate`, `which pokemon can learn thunder`).
 - Ask for a **group** (`starter`, `water starter`, `fossil pokemon`, `eeveelution`).
 - Use **accents and French type names** (`pikachú`, `pokémon électrique`, `FEU`).
-- Ask with a **negation or a colour** (`not electric`, `electric but not fast`, `non-fire`, `red pokemon`, `blue`).
+- Ask with a **negation or a colour** (`not electric`, `electric but not fast`, `non-fire`, `red pokemon`, `blue`, `not red`).
 - Ask a **strategy** question (`rain team`, `sun team`, `paralysis team`) and get a bundle across categories.
 - **Battle (compare)** up to three Pokémon in a link you can share.
 - See **why** each result matched, and how your query was read.
@@ -59,7 +59,7 @@ index. Both are enforced by tests. The sections below go deeper into each step.
 | `evolution of charmander` | Charmander and unrelated results. | Evolution order and conditions are not in the data. Each species carries a family id (`evolution_chain_id`), which could group families, but nothing uses it yet. |
 | `move that hits all enemies`, `swap places` | Loosely related moves. | Paraphrases outside the concept map fall back to word matching. This is the case embeddings could help, and it is why they are listed under next steps. |
 | `starter` | Base forms only (Bulbasaur, Charmander, Squirtle). | A collection is a fixed list of names, not inferred. |
-| `not sleep`, `not heal` | The word is dropped and a note says so. | Negation works for types and stat words only (`not electric`, `not fast`); negating an effect would need a different kind of search. |
+| `not sleep`, `not heal` | The word is dropped and a note says so. | Negation works for types, colours and stat words only (`not electric`, `not red`, `not fast`); negating an effect would need a different kind of search. |
 | `火`, `シャワーズ`, `🔥` | A note: "This Pokédex is English only…" (or "nothing to search for"). | The dataset has no localized names (the brief says so). Accents are folded to plain letters and the type names also work in French, but names, moves and effects are English. |
 | `hm01`, `tm24`, `ghost type resistant to normal` | Nothing. | Machine numbers and resistances are not in the data. |
 
@@ -151,7 +151,7 @@ so every interpretation is explainable and testable.
 | `legendary fire` | legendary or mythical Pokémon of the fire type |
 | `raise defense`, `lower speed` | an effect to search for (the stat word is a term here, not a sort) |
 | `pikachu vs raichu`, `compare mr mime and pikachu` | comparison of the two sides |
-| `not electric`, `non-fire`, `electric not flying`, `!fire`, `electric -flying` | those types are excluded (the next word only); `!` and `-` count when glued to the front of a word |
+| `not electric`, `non-fire`, `electric not flying`, `!fire`, `electric -flying`, `not red`, `!pink` | those types or colours are excluded (the next word only); `!` and `-` count when glued to the front of a word |
 | `electric but not fast` | `not` flips a stat word: slowest first |
 | `red pokemon`, `blue` | species colour filter (the dataset's own colour field, indexed) |
 | `gen 1 starter` | `gen 1` is read and dropped (the whole dataset is generation 1); other numbers add a note |
@@ -434,7 +434,7 @@ JavaScript; HTMX only removes the full reload.
 
 ## Golden-query suite
 
-`internal/golden` scores the engine against 94 queries with known good answers
+`internal/golden` scores the engine against 95 queries with known good answers
 (`cases.json`), through the real engine and Postgres. Cases cover the four
 challenges plus typos, hostile input, empty queries and odd input (negation, colours, filters that match nothing together), in six categories.
 
@@ -449,10 +449,10 @@ category                     cases  passed  recall  MRR
 criteria and comparison      16     16      1.00    0.74
 names and typos              16     16      1.00    0.83
 negatives and hostile input  5      5       -       -
-odd input                    23     23      1.00    0.82
+odd input                    24     24      1.00    0.83
 strategy bundles             8      8       1.00    0.55
 vocabulary-free discovery    26     26      1.00    0.52
-core total                   94     94      1.00    0.64
+core total                   95     95      1.00    0.64
 ```
 
 A case can carry a `known` flag with the reason the engine misses it. A known

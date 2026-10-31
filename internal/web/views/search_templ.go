@@ -130,7 +130,7 @@ func Search(m Meta, p SearchPage) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<p class=\"note hint\">Leave something out with <code>not</code>, <code>!</code> or <code>-</code>: <a href=\"/?q=electric+-flying\">electric -flying</a></p></section><div id=\"content\" aria-live=\"polite\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<p class=\"note hint\">Leave something out with <code>not</code>, <code>!</code> or <code>-</code>: <a href=\"/?q=electric+-flying\">electric -flying</a>, <a href=\"/?q=not+red\">not red</a></p></section><div id=\"content\" aria-live=\"polite\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -208,6 +208,7 @@ type PokemonListParams struct {
 	Types     []string // Pokémon must have every listed type
 	NotTypes  []string // Pokémon must have none of the listed types
 	Color     string   // species colour, empty for any
+	NotColors []string // Pokémon must not have any of the listed colours
 	Legendary bool     // only legendary and mythical Pokémon
 	SortBy    Stat     // empty sorts by id
 	Ascending bool     // stats sort descending (best first) unless set
@@ -237,6 +238,12 @@ func (s *Store) PokemonList(ctx context.Context, p PokemonListParams) ([]Pokemon
 
 	if p.Color != "" {
 		mods = append(mods, sm.Where(psql.Quote("color").EQ(psql.Arg(p.Color))))
+	}
+
+	if len(p.NotColors) > 0 {
+		colors := sortedUnique(p.NotColors)
+		placeholders := strings.TrimSuffix(strings.Repeat("?, ", len(colors)), ", ")
+		mods = append(mods, sm.Where(psql.Raw("(color IS NULL OR color NOT IN ("+placeholders+"))", anySlice(colors)...)))
 	}
 
 	if p.Legendary {

@@ -223,7 +223,7 @@ func (l *Lexical) criteriaLists(ctx context.Context, q Query, kinds []store.Kind
 	if l.expand != nil {
 		collection = l.expand(q.Tokens)
 	}
-	if len(q.Types) == 0 && len(q.NotTypes) == 0 && q.Color == "" && q.Sort == "" && !q.Legendary && len(collection.Pokemon) == 0 {
+	if len(q.Types) == 0 && len(q.NotTypes) == 0 && q.Color == "" && len(q.NotColors) == 0 && q.Sort == "" && !q.Legendary && len(collection.Pokemon) == 0 {
 		return nil, nil
 	}
 	var lists []ranked
@@ -239,7 +239,7 @@ func (l *Lexical) criteriaLists(ctx context.Context, q Query, kinds []store.Kind
 			pokemon, err = l.collection(ctx, q, collection.Pokemon, sortBy)
 		} else {
 			pokemon, err = l.reader.PokemonList(ctx, store.PokemonListParams{
-				Types: q.Types, NotTypes: q.NotTypes, Color: q.Color, Legendary: q.Legendary, SortBy: sortBy, Ascending: q.Ascending, Limit: fetch,
+				Types: q.Types, NotTypes: q.NotTypes, Color: q.Color, NotColors: q.NotColors, Legendary: q.Legendary, SortBy: sortBy, Ascending: q.Ascending, Limit: fetch,
 			})
 		}
 		if err != nil {
@@ -258,6 +258,9 @@ func (l *Lexical) criteriaLists(ctx context.Context, q Query, kinds []store.Kind
 			}
 			if q.Color != "" {
 				reasons = append(reasons, "colour: "+q.Color)
+			}
+			for _, c := range q.NotColors {
+				reasons = append(reasons, "not colour: "+c)
 			}
 			if q.Legendary {
 				reasons = append(reasons, "legendary")

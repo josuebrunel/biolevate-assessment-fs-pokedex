@@ -294,6 +294,18 @@ func TestStore(t *testing.T) {
 		}
 	})
 
+	t.Run("excluded colours", func(t *testing.T) {
+		got, err := s.PokemonList(ctx, store.PokemonListParams{NotColors: []string{"red", "blue"}, SortBy: store.StatTotal, Limit: 200})
+		if err != nil || len(got) == 0 {
+			t.Fatalf("not red or blue = %d (%v)", len(got), err)
+		}
+		for _, p := range got {
+			if p.Color != nil && (*p.Color == "red" || *p.Color == "blue") {
+				t.Errorf("%s is %s", p.Name, *p.Color)
+			}
+		}
+	})
+
 	t.Run("size sorts", func(t *testing.T) {
 		heavy, err := s.PokemonList(ctx, store.PokemonListParams{SortBy: store.StatWeight, Limit: 2})
 		if err != nil {

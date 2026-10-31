@@ -456,6 +456,9 @@ func (e *Engine) emptyFilterNote(ctx context.Context, q Query) (string, error) {
 	for _, t := range q.NotTypes {
 		parts = append(parts, part{"non-" + t, store.PokemonListParams{NotTypes: []string{t}}})
 	}
+	for _, c := range q.NotColors {
+		parts = append(parts, part{"non-" + c, store.PokemonListParams{NotColors: []string{c}}})
+	}
 	if q.Legendary {
 		parts = append(parts, part{"legendary", store.PokemonListParams{Legendary: true}})
 	}

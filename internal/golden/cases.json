@@ -1341,6 +1341,25 @@
   ]
  },
  {
+  "name": "negated colour",
+  "category": "odd input",
+  "query": "not red",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "mewtwo",
+    "within": 3
+   }
+  ],
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "charizard",
+    "within": 50
+   }
+  ]
+ },
+ {
   "name": "colour: blue",
   "category": "odd input",
   "query": "blue",

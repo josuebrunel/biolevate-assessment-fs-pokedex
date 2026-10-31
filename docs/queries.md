@@ -17,7 +17,7 @@ What to type, what the engine returns, and how it is tested. The deep dives are 
 |---|---|
 | Names, fragments, typos | `chu`, `pikchu`, `charzard`, `mr mime`, `pi-ka-chu`, `pikachú` |
 | Type, stat, size | `bulky water`, `strongest fire`, `top 3 fastest`, `heaviest`, `tallest water`, `legendary fire` |
-| Negation and colour | `not electric`, `electric but not fast`, `non-fire`, `!electric`, `electric -flying`, `red pokemon`, `blue` |
+| Negation and colour | `not electric`, `electric but not fast`, `non-fire`, `!electric`, `electric -flying`, `red pokemon`, `blue`, `not red`, `!pink` |
 | Effect or intent | `paralyze`, `heal myself`, `burn`, `raise defense`, `one hit knock out` |
 | Through a move or ability | `pokemon with levitate`, `which pokemon can learn thunder` |
 | Groups | `starter`, `water starter`, `fossil pokemon`, `eeveelution` |
@@ -33,6 +33,7 @@ What to type, what the engine returns, and how it is tested. The deep dives are 
 | `fire or flying` | The same two (both types) | `or` is not understood yet; it is dropped as a filler word. |
 | `fire water`, `pink flying pokemon` | Nothing, and a note such as "No Pokémon in this Pokédex is pink and flying. On their own: pink 12, flying 19. Try dropping one." | No Pokémon has all the filters. The note says how many match each filter alone, so you know which to drop. |
 | `electric not flying` | Electric types without Zapdos | Negation applies to the next word. |
+| `not red`, `water -blue` | Pokémon of any other colour; Water types that are not blue | Colours negate like types. |
 | `acid and pink` | The move Acid, and a note: no pink Pokémon is linked to it | A **filter** (type, colour, negation, legendary) **narrows the Pokémon** found through a move or ability. No pink Pokémon learns Acid in this data, so none are listed, and the page says why. |
 | `electric thunder` | Thunder and the electric Pokémon that learn it | The same rule with a match: Zapdos, Jolteon and others, not every Pokémon that learns Thunder. |
 
@@ -64,5 +65,5 @@ Query 14 may legitimately find little, and that is fine to report.
 
 ## How queries are tested
 
-- **Golden suite** (`internal/golden/cases.json`, 94 cases): written by the engine's author while tuning, so it guards regressions. Run `make eval`.
+- **Golden suite** (`internal/golden/cases.json`, 95 cases): written by the engine's author while tuning, so it guards regressions. Run `make eval`.
 - **Held-out set** (above): not tuned against, reported separately once run.

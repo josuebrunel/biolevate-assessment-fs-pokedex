@@ -47,7 +47,7 @@ templ Search(m Meta, p SearchPage) {
 			<h1 id="home-title">Ask the Pokédex the way you think.</h1>
 			<p class="lede">Half a name, a team slot to fill, a status effect, a weather plan. Type it in plain words and every result says why it matched.</p>
 			@SearchForm(p.Query)
-			<p class="note hint">Leave something out with <code>not</code>, <code>!</code> or <code>-</code>: <a href="/?q=electric+-flying">electric -flying</a></p>
+			<p class="note hint">Leave something out with <code>not</code>, <code>!</code> or <code>-</code>: <a href="/?q=electric+-flying">electric -flying</a>, <a href="/?q=not+red">not red</a></p>
 		</section>
 		<div id="content" aria-live="polite">
 			@Content(p)
