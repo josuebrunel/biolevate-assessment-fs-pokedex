@@ -693,26 +693,3 @@ Logs are structured (`log/slog`), one JSON object per line by default.
 | `make test-integration` | starts the compose database and runs every test |
 | `make eval` | print the golden-query report |
 | `make lint` | `go vet` and `golangci-lint` |
-
-### Project status
-
-Work is tracked in the [overview issue](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/1), one ticket per step.
-
-| Step | State |
-|---|---|
-| Project scaffold + CI | done |
-| [Docker Compose + Goose schema](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/2) | done |
-| [Import command](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/3) | done |
-| [Store layer](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/4) | done |
-| [Query optimization guard](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/5) | done |
-| [Query parser](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/6) | done |
-| [Lexical retriever](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/7) | done |
-| [Logging](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/8) | done |
-| [Concept map](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/11) | done |
-| [Graph expansion and explanations](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/12) | done |
-| [Web UI and compare view](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/13) | done |
-| [Golden-query suite](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/14) | done |
-| [Hardening: limits, pool, container, smoke test](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/15) | done |
-| [README write-up and AI disclosure](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/16) | done |
-| [Fix the known lexical misses](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/17) | done |
-| Optional embeddings | later, only if measured |
