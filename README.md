@@ -27,6 +27,7 @@
   - [Concept map](#concept-map)
   - [Graph expansion and the engine](#graph-expansion-and-the-engine)
   - [Web UI](#web-ui)
+  - [Golden-query suite](#golden-query-suite)
   - [Logging](#logging)
   - [Code conventions](#code-conventions)
   - [Commands](#commands)
@@ -154,7 +155,8 @@ AI-use disclosure land here as they are built.
 | [Concept map](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/11) | done |
 | [Graph expansion and explanations](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/12) | done |
 | [Web UI and compare view](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/13) | done |
-| Golden-query suite, hardening, write-up | planned |
+| [Golden-query suite](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/14) | done |
+| Optional embeddings, hardening, write-up | planned |
 
 ## Run it
 
@@ -424,6 +426,36 @@ JavaScript; HTMX only removes the full reload.
   committed (`*_templ.go`), so building needs no `templ` binary; run
   `make generate` after editing a `.templ` file.
 
+## Golden-query suite
+
+`internal/golden` scores the engine against 58 queries with known good answers
+(`cases.json`), through the real engine and Postgres. Cases cover the four
+challenges plus typos, hostile input and empty queries, in five categories.
+
+Each case lists results that must appear within the top N of a kind, results
+that must not appear, or that nothing may come back. The runner reports recall
+(expectations met), mean reciprocal rank (how high they rank) and a pass rate
+per category. It takes any `Searcher`, so a vector or hybrid retriever can be
+scored on the same cases and compared.
+
+```
+category                     cases  passed  recall  MRR
+criteria and comparison      11     11      1.00    0.70
+names and typos              14     14      1.00    0.88
+negatives and hostile input  5      5       -       -
+strategy bundles             8      8       1.00    0.55
+vocabulary-free discovery    10     10      1.00    0.53
+core total                   48     48      1.00    0.65
+all (incl. known limits)     58     48      0.81    0.52
+```
+
+Ten cases are **known limits**: queries the lexical engine misses today, each
+with the reason (for example "pokemon with levitate" does not follow the ability
+back to its Pokémon, "legendary" is stored but not searchable, "chu" is under
+the three-character minimum). They are written down instead of hidden. A known
+case must fail, so when one starts passing the suite fails until its flag is
+removed. Run `make eval` for the full report; the suite also runs in CI.
+
 ## Logging
 
 Logs are structured (`log/slog`), one JSON object per line by default.
@@ -475,4 +507,5 @@ Logs are structured (`log/slog`), one JSON object per line by default.
 | `make import` | load the embedded snapshot into the database |
 | `make test` | unit tests; Postgres tests are skipped |
 | `make test-integration` | starts the compose database and runs every test |
+| `make eval` | print the golden-query report |
 | `make lint` | `go vet` and `golangci-lint` |
