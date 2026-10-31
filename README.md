@@ -17,6 +17,7 @@
     - [Illustrative search challenges](#illustrative-search-challenges)
 - [Solution](#solution)
   - [At a glance](#at-a-glance)
+  - [Decisions and relevance policy](#decisions-and-relevance-policy)
   - [Quick start](#quick-start)
     - [Prerequisites](#prerequisites)
     - [Run it](#run-it)
@@ -152,13 +153,31 @@ click the matching example, or type the query.
 | An effect, without the vocabulary | `put opponent to sleep` | The moves that cause sleep, abilities around sleep, and the Pokémon that learn or have them, each with the sentence that links it. |
 | A strategy across categories | `rain team` | Three groups in one view: abilities that use rain, moves that mention it, Pokémon that benefit (and why). |
 
-What was delivered:
+What was delivered: the app (server-rendered UI, live search, shareable URLs, battle view), the engine (parser, retrieval, concept map, graph expansion, explanations), the proof (tests on real Postgres, the golden suite, a query-plan guard, a CI smoke test), the operations (logs, probes, timeouts, a small hardened image) and this write-up.
 
-- **The app:** server-rendered web UI, live search, shareable result URLs, compare view.
-- **The engine:** rule-based query parser, lexical retrieval with typo tolerance, a concept map for vocabulary, graph expansion from moves and abilities to Pokémon, and an explanation for every result.
-- **The proof:** unit and integration tests on real Postgres, a 71-query golden suite that reports recall and ranking, a query-plan guard that fails any query that cannot use an index, and a CI smoke test of the real container.
-- **The operations:** structured logs with request IDs, health and readiness probes, request and statement timeouts, rate limiting, a small hardened image.
-- **The write-up:** this README (choices, limits, next steps, AI disclosure).
+## Decisions and relevance policy
+
+**Who it is for.** A new trainer who remembers half a name or an effect, and an experienced one comparing options or building a team. Both type plain words and need to *trust* a result, so every result says why it is there.
+
+**Problems picked, and left out.** All four situations from the brief, because they stretch the engine in different ways (lookup, criteria, vocabulary, strategy). Left out on purpose: matchup and evolution questions (the data has no type chart or evolution order), accounts, and anything that needs a model at query time.
+
+**What "relevant" means here, in priority order.**
+
+1. **Exact and prefix name matches** come first: someone typing `bulba` wants Bulbasaur at the top, not the best text match.
+2. **Typos and fragments** (`pikchu`, `chu`) come next, at a lower weight, so they never outrank a real name.
+3. **Concept-expanded text** matches the data's own words (`asleep` becomes "puts the target to sleep"). Phrases that state a *cause* outrank mere mentions, and status moves get a small boost, because their text describes the main effect.
+4. **Graph evidence** turns a matching move or ability into the Pokémon that learn or have it. A Pokémon linked by several matches outranks one linked by one.
+5. **Criteria** (type, stat, size, legendary) filter and sort directly and are shown to the user as "how we read your query".
+
+Ranks, not raw scores, are fused, because trigram similarity, text rank and stat sorts are not comparable. Every rule is deterministic and explainable, which is also why the golden suite can test them.
+
+**Stack choice.** Postgres covers names, typos, full-text and relations in one engine, and the plan guard can prove every query uses an index. For 429 documents a single binary with embedded SQLite would also have worked and needs no Docker. I chose Postgres to show a production-shaped design, and I accept the Docker prerequisite as the price.
+
+**Honest limits of this write-up.**
+
+- The 71-query golden suite was written by the engine's author while tuning it. It guards regressions and measures changes; it is not an independent benchmark. A held-out set written before looking at results is the next step.
+- The hardening (rate limiting, timeouts, distroless image, CSP, query-plan guard) goes beyond what the brief asks. It was a deliberate choice to show production thinking, but it is not needed to judge the search itself.
+- Cards confirm a Pokémon with its genus, types and stats. They do not show the species description or an image, and there is no detail page yet (see next steps).
 
 ## Quick start
 
@@ -219,7 +238,7 @@ skips the tests that need Postgres.
 | Ask | What happens | Why |
 |---|---|---|
 | `weak against water`, `how to beat gyarados` | A list that ignores the intent. | The dataset has no type-effectiveness table, so the engine cannot answer matchup questions. It shows what it finds rather than refusing. |
-| `evolution of charmander` | Charmander and unrelated results. | Evolution chains are not in the data. |
+| `evolution of charmander` | Charmander and unrelated results. | Evolution order and conditions are not in the data. Each species carries a family id (`evolution_chain_id`), which could group families, but nothing uses it yet. |
 | `move that hits all enemies`, `swap places` | Loosely related moves. | Paraphrases outside the concept map fall back to word matching. This is the case embeddings could help, and it is why they are listed under next steps. |
 | `starter` | Base forms only (Bulbasaur, Charmander, Squirtle). | A collection is a fixed list of names, not inferred. |
 
@@ -261,7 +280,7 @@ index. Both are enforced by tests. Details are in the [design notes](docs/design
 |---|---|---|
 | Language, web | Go, Echo v5 | Small static binary, strong standard library, fast to run and review. |
 | Views | Templ, HTMX, hand-written CSS | Server-rendered pages that work without JavaScript; HTMX only removes full reloads. No Node build, nothing fetched at runtime, so it works offline. |
-| Database | Postgres 17 with `pg_trgm` | Full-text, typo tolerance and relations in one engine, one container. SQLite has no edit-distance matching. |
+| Database | Postgres 17 with `pg_trgm` | Full-text, typo tolerance and relations in one engine, one container. SQLite (FTS5 trigram, or edit distance in memory) would also work at this size; Postgres adds the plan guard and one engine for every query kind. |
 | Queries | Bob query builder | Bound parameters only, so no string-built SQL. |
 | Migrations | Goose | `-migrate up/down/revert` on the binary itself. |
 | Config | `xenv`, `APP_` variables | One typed struct, validated at startup. |
@@ -272,7 +291,7 @@ index. Both are enforced by tests. Details are in the [design notes](docs/design
 
 - **Redis or any cache:** the data is static and small, and indexed Postgres answers in milliseconds. A cache adds a service and an invalidation problem for nothing measurable.
 - **Embeddings, for now:** the golden-suite misses turned out to be structural or vocabulary gaps that a rule fixed exactly and explainably, so vectors did not pay for themselves. They are kept as a measured option, judged on the golden suite (see next steps).
-- **A graph extension such as Apache AGE:** the graph is one hop deep with about 4,300 edges, which a join handles. AGE would need its own Postgres image, Cypher instead of Bob, and weaker index checks. It would earn its place with evolution chains or type-effectiveness paths, which this dataset does not have.
+- **A graph extension such as Apache AGE:** the graph is one hop deep with about 4,300 edges, which a join handles. AGE would need its own Postgres image, Cypher instead of Bob, and weaker index checks. It would earn its place with evolution order or type-effectiveness paths, which this dataset does not have.
 - **DaisyUI and a JS front end:** both need a build step or a CDN; the hand-made 15 KB stylesheet keeps the app offline and dependency-free.
 
 ## How it was validated
@@ -298,9 +317,10 @@ index. Both are enforced by tests. Details are in the [design notes](docs/design
 ## Next steps
 
 1. **Measure embeddings** (pgvector in the same database, a local model, silent fallback to lexical). The paraphrase queries above are the test: add them to the golden suite, then keep embeddings only if they win by enough to justify an extra service.
-2. **Richer data** if allowed: evolution chains, type effectiveness, learn methods. This is what matchup and evolution questions need, and where a graph extension would start to pay.
-3. **More languages** and spoken-form queries.
-4. **Distributed rate limiting and a cache** only if traffic ever justified them.
+2. **Confirmation and depth:** show the species description (already stored) on cards, add a Pokémon detail page, and use the family id to group evolutions. Then, if allowed, richer data: a small type chart, evolution order, learn methods. This is what matchup and evolution questions need, and where a graph extension would start to pay.
+3. **A held-out evaluation set**, written before running it and never tuned against, reported next to the golden suite.
+4. **More languages** and spoken-form queries.
+5. **Distributed rate limiting and a cache** only if traffic ever justified them.
 
 ## Design notes
 
