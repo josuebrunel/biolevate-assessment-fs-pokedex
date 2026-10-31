@@ -1,0 +1,38 @@
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: pokedex
+      POSTGRES_PASSWORD: pokedex
+      POSTGRES_DB: pokedex
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pokedex -d pokedex"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  migrate:
+    build: .
+    command: ["-migrate", "up"]
+    environment:
+      APP_DATABASE_URL: postgres://pokedex:pokedex@db:5432/pokedex?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build: .
+    environment:
+      APP_DATABASE_URL: postgres://pokedex:pokedex@db:5432/pokedex?sslmode=disable
+    ports:
+      - "8080:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:
