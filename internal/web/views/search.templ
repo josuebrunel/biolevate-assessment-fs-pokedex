@@ -16,12 +16,17 @@ type Scenario struct {
 	Icon  string
 }
 
-// Scenarios are the four questions the engine is built to answer.
+// Scenarios are the example quests. The first four are the situations from the
+// brief; the rest are everyday trainer needs that each show one more feature.
 var Scenarios = []Scenario{
 	{"01", "Recover something partially remembered", "A new trainer saw a Pokémon starting with “bulba”.", "bulba", "partial"},
 	{"02", "Find and compare candidates", "One team slot left. Fastest Electric types first, ready to compare.", "fast electric", "bolt"},
 	{"03", "Discover an answer without the vocabulary", "Moves that cause sleep, then the Pokémon that can use them.", "put opponent to sleep", "moon-z"},
 	{"04", "Explore a strategy across categories", "Abilities, moves and Pokémon that work with rain, in one view.", "rain team", "rain"},
+	{"05", "Find a tank for the back line", "A sturdy Water type, the one with the most HP first.", "bulky water", "shield"},
+	{"06", "Keep one type off your team", "Electric attackers, without any Flying type. Try “not red” too.", "electric -flying", "minus"},
+	{"07", "Who can learn this move?", "The move Earthquake, then every Pokémon that learns it.", "who learns earthquake", "move"},
+	{"08", "Settle a rivalry", "Two candidates side by side, ready for a Battle.", "raichu vs jolteon", "battle"},
 }
 
 // SearchPage is the home page: the search box, and below it either the example
@@ -68,7 +73,7 @@ templ ScenarioList() {
 	<div class="wrap" aria-labelledby="scen-title">
 		<div class="section-title">
 			<h2 id="scen-title">Pick a quest</h2>
-			<span class="pill">4</span>
+			<span class="pill">{ count(len(Scenarios)) }</span>
 		</div>
 		<div class="quests">
 			for _, s := range Scenarios {
@@ -141,7 +146,7 @@ templ Empty(query string) {
 		<h2>Nothing matched “{ query }”</h2>
 		<p class="note">Try a Pokémon name or its first letters, a type with a stat (“fast electric”), an effect (“put opponent to sleep”), a plan (“rain team”) or an exclusion (“electric -flying”).</p>
 		<div class="chips">
-			for _, s := range Scenarios {
+			for _, s := range Scenarios[:4] {
 				<a class="chip" href={ templ.SafeURL("/?q=" + queryEscape(s.Query)) }>{ s.Query }</a>
 			}
 		</div>

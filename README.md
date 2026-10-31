@@ -166,7 +166,7 @@ With `DB_PORT=5433` set, `make` targets use that port too. `make test` alone ski
 
 ## Try these four searches
 
-They are the four situations from the brief. Type them, or click the examples on the home page.
+They are the four situations from the brief. Type them, or click the examples on the home page, which also has four more quests (a tank, a type left out, who learns a move, a rivalry).
 
 | Situation | Try | What you get |
 |---|---|---|

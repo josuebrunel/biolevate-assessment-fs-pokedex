@@ -401,7 +401,7 @@ JavaScript; HTMX only removes the full reload.
 
 | Route | Purpose |
 |---|---|
-| `/` | search box, a hint on leaving things out (`not`, `!`, `-`) and four example questions |
+| `/` | search box, a hint on leaving things out (`not`, `!`, `-`) and eight example quests |
 | `/?q=...` | results; the URL is shareable and reloadable |
 | `/compare?p=raichu&p=jolteon` | battle table (side by side) for up to three Pokémon |
 | `/healthz`, `/readyz` | liveness, and readiness (pings the database) |
@@ -422,7 +422,7 @@ JavaScript; HTMX only removes the full reload.
 - **Security headers:** strict Content-Security-Policy (own scripts and styles,
   no eval), `nosniff`, referrer policy. Templ escapes all output; a test checks
   a script payload in the query is escaped.
-- **Look and feel:** a mobile-first trainer-quest theme, light by default. Dark follows the OS setting, and a header button overrides it (saved in the browser, applied before first paint). The four example searches are quests, "Professor Chen" explains how a query was read, results are tabs per kind (Pokémon, Moves, Abilities, with counts; stacked if JavaScript is off), a card's border shows rarity (from the base stat total, also written out), and compare is a "Battle" with a round count and a winner. Nothing is faked: there are no XP or levels, since nothing is stored.
+- **Look and feel:** a mobile-first trainer-quest theme, light by default. Dark follows the OS setting, and a header button overrides it (saved in the browser, applied before first paint). Eight example searches are quests (the four from the brief, plus a tank, a type left out, who learns a move and a rivalry), "Professor Chen" explains how a query was read, results are tabs per kind (Pokémon, Moves, Abilities, with counts; stacked if JavaScript is off), a card's border shows rarity (from the base stat total, also written out), and compare is a "Battle" with a round count and a winner. Nothing is faked: there are no XP or levels, since nothing is stored.
 - **Offline:** CSS, JS and htmx are embedded, with no CDN or build step. The one
   external request is optional Google Fonts; without network the page falls back
   to system fonts. Images are not used at all, so the sprites in the dataset are
