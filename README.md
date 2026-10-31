@@ -134,7 +134,7 @@ feature list. Your application does not need to solve all four.
 
 ![Results for "rain team": abilities, moves and Pokémon, each with the reason it matched](docs/screenshot-results.jpg)
 
-**Deep dives** (schema, query plan, ranking, concept map, hardening) live in **[docs/design.md](docs/design.md)**. This page is meant to be read in five minutes.
+**Deep dives** (schema, query plan, ranking, concept map, hardening) live in **[docs/design.md](docs/design.md)**, and **example queries** in **[docs/queries.md](docs/queries.md)**. This page is meant to be read in five minutes.
 
 ## Quick start
 
@@ -175,7 +175,7 @@ They are the four situations from the brief. Type them, or click the examples on
 | An effect, without the vocabulary | **`put opponent to sleep`** | The moves that cause sleep, then the Pokémon that learn them, **each with the sentence that links it**. |
 | A strategy across categories | **`rain team`** | **Tabs** for abilities, moves and Pokémon that work with rain, and why. |
 
-Also works: `chu`, `legendary fire`, `heaviest`, `pokemon with levitate`, `water starter`, `not electric`, `red pokemon`. More in the [search scope](docs/design.md#search-scope-what-it-can-and-cannot-do).
+Also works: `chu`, `legendary fire`, `heaviest`, `pokemon with levitate`, `water starter`, `not electric`, `red pokemon`. More examples, how filters combine and the held-out set: **[docs/queries.md](docs/queries.md)**. Full scope: [design.md](docs/design.md#search-scope-what-it-can-and-cannot-do).
 
 ## How it works
 
