@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/stephenafamo/bob"
@@ -115,6 +116,27 @@ func (s *Store) PokemonGetMany(ctx context.Context, ids []int) ([]Pokemon, error
 		return nil, err
 	}
 	return byID(ids, pokemon, func(p Pokemon) int { return p.ID }), nil
+}
+
+// PokemonGetByNames loads Pokémon by name in the order requested, with one
+// query for the rows and one for their types. Names are matched exactly
+// (lowercase, hyphenated); unknown names are skipped.
+func (s *Store) PokemonGetByNames(ctx context.Context, names []string) ([]Pokemon, error) {
+	if len(names) == 0 {
+		return nil, nil
+	}
+	pokemon, err := s.selectPokemon(ctx, sm.Where(psql.Quote("name").In(psql.Arg(anySlice(sortedUnique(names))...))))
+	if err != nil {
+		return nil, err
+	}
+	rank := make(map[string]int, len(names))
+	for i, n := range names {
+		if _, ok := rank[n]; !ok {
+			rank[n] = i
+		}
+	}
+	slices.SortFunc(pokemon, func(a, b Pokemon) int { return rank[a.Name] - rank[b.Name] })
+	return pokemon, nil
 }
 
 // PokemonGetByName loads one Pokémon with its abilities and moves. The name is

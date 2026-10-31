@@ -240,6 +240,22 @@ func TestStore(t *testing.T) {
 		}
 	})
 
+	t.Run("GetByNames", func(t *testing.T) {
+		got, err := s.PokemonGetByNames(ctx, []string{"raichu", "nope", "bulbasaur", "raichu"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if g := pokemonNames(got); !slices.Equal(g, []string{"raichu", "bulbasaur"}) {
+			t.Fatalf("order = %v, want [raichu bulbasaur]", g)
+		}
+		if !slices.Equal(got[1].Types, []string{"grass", "poison"}) {
+			t.Errorf("bulbasaur types = %v", got[1].Types)
+		}
+		if none, err := s.PokemonGetByNames(ctx, nil); err != nil || none != nil {
+			t.Errorf("empty = %v, %v", none, err)
+		}
+	})
+
 	t.Run("GetMany", func(t *testing.T) {
 		got, err := s.PokemonGetMany(ctx, []int{25, 1, 999, 25})
 		if err != nil {
