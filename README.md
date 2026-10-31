@@ -1,15 +1,14 @@
-# Technical Exercise — The Pokédex Search Engine
+# Contents
 
-## Contents
-
-- [Context](#context)
-- [Mission](#mission)
-- [Expected effort](#expected-effort)
-- [Deliverables](#deliverables)
-- [Technical freedom](#technical-freedom)
-  - [Use of AI tools](#use-of-ai-tools)
-- [Product expectations](#product-expectations)
-  - [Illustrative search challenges](#illustrative-search-challenges)
+- [Assessment](#assessment)
+  - [Context](#context)
+  - [Mission](#mission)
+  - [Expected effort](#expected-effort)
+  - [Deliverables](#deliverables)
+  - [Technical freedom](#technical-freedom)
+    - [Use of AI tools](#use-of-ai-tools)
+  - [Product expectations](#product-expectations)
+    - [Illustrative search challenges](#illustrative-search-challenges)
 - [Solution](#solution)
   - [Status](#status)
   - [Run it](#run-it)
@@ -17,7 +16,11 @@
   - [Data and schema](#data-and-schema)
   - [Commands](#commands)
 
-## Context
+# Assessment
+
+## Technical Exercise — The Pokédex Search Engine
+
+### Context
 
 Professor Chen leads a growing research lab whose Pokédex has become difficult
 to use. It contains information about Pokémon, moves, abilities, types, stats,
@@ -29,7 +32,7 @@ researcher may look for a specific move, while a new trainer may remember only
 part of a name, a characteristic, an effect, or a gameplay intent.
 A query may also involve several kinds of entities.
 
-## Mission
+### Mission
 
 **Build a program in which users submit a query
 and obtain useful results from the provided Pokémon data.**
@@ -45,13 +48,13 @@ It is to decide which search problems to solve,
 what makes a result relevant,
 and how to turn those decisions into a coherent product.
 
-## Expected effort
+### Expected effort
 
 This exercise is designed to take approximately **8–12 hours of focused work**.
 This estimate is guidance to help you size your solution, not a monitored time
 limit. You will receive a separate calendar deadline, normally about one week.
 
-## Deliverables
+### Deliverables
 
 Send a **Git repository** link or a **zip archive**.
 
@@ -60,14 +63,14 @@ Your application must **run locally**.
 You should **include a write-up** explaining the choices you made,
 the limitations of your project and what you would do next.
 
-## Technical freedom
+### Technical freedom
 
 **There is no prescribed technology stack**.
 You are free to choose tools that fit your intended experience.
 External paid services must be optional
 and must have a functional local or free fallback for review.
 
-### Use of AI tools
+#### Use of AI tools
 
 **You may use AI-assisted tools**. If you do, include a short disclosure stating:
 
@@ -78,7 +81,7 @@ and must have a functional local or free fallback for review.
 Use of AI is not evaluated negatively.
 You remain responsible for understanding and being able to explain every part of your submission.
 
-## Product expectations
+### Product expectations
 
 We are interested in your **thinking process** :)
 
@@ -92,7 +95,7 @@ rather than expanding the scope unnecessarily.
 A focused product that solves one difficult user need well
 can be stronger than a broad collection of unfinished features.
 
-### Illustrative search challenges
+#### Illustrative search challenges
 
 The following situations progress from a focused lookup to broader,
 exploratory needs.
@@ -115,13 +118,13 @@ exploratory needs.
 These are product situations, not an exhaustive acceptance test or a required
 feature list. Your application does not need to solve all four.
 
-## Solution
+# Solution
 
 Work is tracked in the [overview issue](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/1).
 This section grows with each step: design decisions, limitations and the
 AI-use disclosure land here as they are built.
 
-### Status
+## Status
 
 | Step | State |
 |---|---|
@@ -132,7 +135,7 @@ AI-use disclosure land here as they are built.
 | Web UI and compare view | planned |
 | Golden-query suite, hardening, write-up | planned |
 
-### Run it
+## Run it
 
 ```sh
 docker compose up --build
@@ -145,7 +148,7 @@ is already taken on your machine, use `DB_PORT=5433 docker compose up --build`.
 To run the app outside Docker, start only the database with
 `docker compose up -d --wait db`, then `make migrate-up import run`.
 
-### Stack
+## Stack
 
 Go, Echo v5, Postgres (with `pg_trgm`; pgvector image ready for the optional
 embeddings step), Goose migrations, Bob for queries. Postgres does the heavy
@@ -154,7 +157,7 @@ lifting for search: weighted full-text (`tsvector`), typo and prefix tolerance
 the corpus is static and small, so a cache would add a moving part for no
 measurable gain.
 
-### Data and schema
+## Data and schema
 
 The reference snapshot is committed as `internal/data/pokedex.json` and embedded
 in the binary, so the app is reproducible offline. It is verified against the
@@ -172,7 +175,7 @@ and relations are rebuilt, so running it twice leaves identical row counts.
 One data caveat: abilities come from current PokéAPI associations, not Gen 1
 (which had none), so ability results can include modern-game semantics.
 
-### Commands
+## Commands
 
 | Command | Purpose |
 |---|---|
