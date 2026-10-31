@@ -45,6 +45,7 @@ index. Both are enforced by tests. The sections below go deeper into each step.
 - Search by **effect or intent** in plain words (`put opponent to sleep`, `paralyze`, `heal myself`, `burn`, `raise defense`, `one hit knock out`).
 - Ask who **has a move or ability** (`pokemon with levitate`, `which pokemon can learn thunder`).
 - Ask for a **group** (`starter`, `water starter`, `fossil pokemon`, `eeveelution`).
+- Ask with a **negation or a colour** (`not electric`, `electric but not fast`, `non-fire`, `red pokemon`, `blue`).
 - Ask a **strategy** question (`rain team`, `sun team`, `paralysis team`) and get a bundle across categories.
 - **Battle (compare)** up to three Pokémon in a link you can share.
 - See **why** each result matched, and how your query was read.
@@ -57,6 +58,8 @@ index. Both are enforced by tests. The sections below go deeper into each step.
 | `evolution of charmander` | Charmander and unrelated results. | Evolution order and conditions are not in the data. Each species carries a family id (`evolution_chain_id`), which could group families, but nothing uses it yet. |
 | `move that hits all enemies`, `swap places` | Loosely related moves. | Paraphrases outside the concept map fall back to word matching. This is the case embeddings could help, and it is why they are listed under next steps. |
 | `starter` | Base forms only (Bulbasaur, Charmander, Squirtle). | A collection is a fixed list of names, not inferred. |
+| `not sleep`, `not heal` | The word is dropped and a note says so. | Negation works for types and stat words only (`not electric`, `not fast`); negating an effect would need a different kind of search. |
+| `hm01`, `tm24`, `ghost type resistant to normal` | Nothing. | Machine numbers and resistances are not in the data. |
 
 Ten queries that used to miss (ability and move lookups, `legendary`, `heaviest`,
 `raise defense`, `ohko`, `fire starter`, `chu` and others) are now fixed and are
@@ -145,6 +148,14 @@ so every interpretation is explainable and testable.
 | `legendary fire` | legendary or mythical Pokémon of the fire type |
 | `raise defense`, `lower speed` | an effect to search for (the stat word is a term here, not a sort) |
 | `pikachu vs raichu`, `compare mr mime and pikachu` | comparison of the two sides |
+| `not electric`, `non-fire`, `electric not flying` | those types are excluded (the next word only) |
+| `electric but not fast` | `not` flips a stat word: slowest first |
+| `red pokemon`, `blue` | species colour filter (the dataset's own colour field, indexed) |
+| `gen 1 starter` | `gen 1` is read and dropped (the whole dataset is generation 1); other numbers add a note |
+| `fastest slowest` | the first stat word wins, and a note names the ignored one |
+| `e`, `pokemon` | a single letter or a bare kind word is not searched; a note asks for more |
+
+**Notes.** When the parser or engine understood something it could not act on (an ignored word, a negation it cannot apply, an impossible type pair, a query too short), it adds a plain-language **note**, shown in Professor Chen's box. A search is never silently empty or silently wrong when the reason is known. Two retrieval rules support this: a name that matches **exactly** does not follow its description into the graph (so `mr mime` is not about the move Mimic), and a name with no match is retried without hyphens (`pi-ka-chu`).
 
 The result is a set of hints, not filters. `poison` is both a type and a word in
 move effects, so the retrievers decide how to combine types, terms and the full
@@ -341,9 +352,9 @@ JavaScript; HTMX only removes the full reload.
 
 ## Golden-query suite
 
-`internal/golden` scores the engine against 71 queries with known good answers
+`internal/golden` scores the engine against 83 queries with known good answers
 (`cases.json`), through the real engine and Postgres. Cases cover the four
-challenges plus typos, hostile input and empty queries, in five categories.
+challenges plus typos, hostile input, empty queries and odd input (negation, colours, impossible type pairs), in six categories.
 
 Each case lists results that must appear within the top N of a kind, results
 that must not appear, or that nothing may come back. The runner reports recall
@@ -356,9 +367,10 @@ category                     cases  passed  recall  MRR
 criteria and comparison      16     16      1.00    0.74
 names and typos              16     16      1.00    0.83
 negatives and hostile input  5      5       -       -
+odd input                    12     12      1.00    0.92
 strategy bundles             8      8       1.00    0.55
 vocabulary-free discovery    26     26      1.00    0.52
-core total                   71     71      1.00    0.62
+core total                   83     83      1.00    0.63
 ```
 
 A case can carry a `known` flag with the reason the engine misses it. A known
