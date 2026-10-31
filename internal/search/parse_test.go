@@ -57,6 +57,8 @@ func TestParse(t *testing.T) {
 			Query{Types: []string{"water"}, Notes: []string{"This Pokédex is English only, so “火” could not be searched. Accents are fine, and French type names (feu, eau, électrique) work."}}},
 		{"nothing searchable", "🔥",
 			Query{Notes: []string{"There was nothing to search for: use letters and digits."}}},
+		{"the word colour is filler", "color pink", Query{Color: "pink"}},
+		{"colour, either spelling", "pink colour pokemon", Query{Color: "pink", Kinds: []store.Kind{store.KindPokemon}}},
 		{"but is not a word to search", "water but fast", Query{Types: []string{"water"}, Sort: store.StatSpeed}},
 		{"bulky", "tanky normal", Query{Types: []string{"normal"}, Sort: store.StatHP}},
 		{"weakest", "weakest", Query{Sort: store.StatTotal, Ascending: true}},

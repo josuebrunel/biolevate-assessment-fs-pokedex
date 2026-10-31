@@ -357,7 +357,7 @@ JavaScript; HTMX only removes the full reload.
 
 ## Golden-query suite
 
-`internal/golden` scores the engine against 91 queries with known good answers
+`internal/golden` scores the engine against 92 queries with known good answers
 (`cases.json`), through the real engine and Postgres. Cases cover the four
 challenges plus typos, hostile input, empty queries and odd input (negation, colours, impossible type pairs), in six categories.
 
@@ -372,10 +372,10 @@ category                     cases  passed  recall  MRR
 criteria and comparison      16     16      1.00    0.74
 names and typos              16     16      1.00    0.83
 negatives and hostile input  5      5       -       -
-odd input                    20     20      1.00    0.85
+odd input                    21     21      1.00    0.81
 strategy bundles             8      8       1.00    0.55
 vocabulary-free discovery    26     26      1.00    0.52
-core total                   91     91      1.00    0.64
+core total                   92     92      1.00    0.63
 ```
 
 A case can carry a `known` flag with the reason the engine misses it. A known

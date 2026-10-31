@@ -1529,5 +1529,24 @@
     "within": 50
    }
   ]
+ },
+ {
+  "name": "the word colour is filler",
+  "category": "odd input",
+  "query": "color pink",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "clefable",
+    "within": 5
+   }
+  ],
+  "forbid": [
+   {
+    "kind": "abilities",
+    "name": "mold-breaker",
+    "within": 50
+   }
+  ]
  }
 ]

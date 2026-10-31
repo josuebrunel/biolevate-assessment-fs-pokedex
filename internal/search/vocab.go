@@ -65,7 +65,7 @@ var stopwords = map[string]bool{
 	"what": true, "which": true, "how": true, "do": true, "does": true, "it": true, "its": true, "be": true,
 	"get": true, "way": true, "ways": true, "use": true, "type": true, "types": true, "top": true,
 	"compare": true, "vs": true, "versus": true,
-	"but": true, "put": true, "make": true, "cause": true, "causes": true, "opponent": true, "enemy": true, "foe": true,
+	"but": true, "color": true, "colour": true, "colors": true, "colours": true, "put": true, "make": true, "cause": true, "causes": true, "opponent": true, "enemy": true, "foe": true,
 }
 
 // statNouns are stat words that name the stat itself, as in "raise defense",

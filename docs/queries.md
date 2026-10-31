@@ -64,5 +64,5 @@ Query 14 may legitimately find little, and that is fine to report.
 
 ## How queries are tested
 
-- **Golden suite** (`internal/golden/cases.json`, 91 cases): written by the engine's author while tuning, so it guards regressions. Run `make eval`.
+- **Golden suite** (`internal/golden/cases.json`, 92 cases): written by the engine's author while tuning, so it guards regressions. Run `make eval`.
 - **Held-out set** (above): not tuned against, reported separately once run.
