@@ -1248,6 +1248,30 @@
   ]
  },
  {
+  "name": "bang negates a type",
+  "category": "odd input",
+  "query": "!electric",
+  "expect": [
+   {
+    "kind": "pokemon",
+    "name": "mewtwo",
+    "within": 3
+   }
+  ],
+  "forbid": [
+   {
+    "kind": "pokemon",
+    "name": "jolteon",
+    "within": 50
+   },
+   {
+    "kind": "pokemon",
+    "name": "zapdos",
+    "within": 50
+   }
+  ]
+ },
+ {
   "name": "negated stat word flips the sort",
   "category": "odd input",
   "query": "electric but not fast",

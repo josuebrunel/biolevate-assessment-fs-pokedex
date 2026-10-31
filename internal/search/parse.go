@@ -2,6 +2,7 @@ package search
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -148,10 +149,14 @@ func kindWord(k store.Kind) string {
 	return "Pokémon"
 }
 
+// shortNegation matches "!" or "-" glued to the front of a word ("!fire",
+// "electric -flying"). Inside a word, as in "mr-mime" or "pikachu!", it never matches.
+var shortNegation = regexp.MustCompile(`(^|\s)[!-]+(\pL)`)
+
 // tokenize lowercases, folds accents and splits on anything that is not a
 // letter, digit or hyphen, so "sleep-powder" and "mr-mime" stay whole.
 func tokenize(s string) []string {
-	s = accentFolder.Replace(strings.ToLower(s))
+	s = shortNegation.ReplaceAllString(accentFolder.Replace(strings.ToLower(s)), "${1}not ${2}")
 	fields := strings.FieldsFunc(s, func(r rune) bool {
 		return !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '-'
 	})

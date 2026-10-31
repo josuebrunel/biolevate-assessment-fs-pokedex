@@ -39,6 +39,11 @@ func TestParse(t *testing.T) {
 
 		// Odd input.
 		{"negated type", "not electric", Query{NotTypes: []string{"electric"}}},
+		{"bang negates", "!electric", Query{NotTypes: []string{"electric"}}},
+		{"dash negates", "electric -flying", Query{Types: []string{"electric"}, NotTypes: []string{"flying"}}},
+		{"bang before a stat word", "electric !fast", Query{Types: []string{"electric"}, Sort: store.StatSpeed, Ascending: true}},
+		{"hyphen inside a name is not a negation", "mr-mime", Query{Terms: []string{"mr-mime"}}},
+		{"trailing bang is not a negation", "pikachu!", Query{Terms: []string{"pikachu"}}},
 		{"negation words", "non-electric", Query{NotTypes: []string{"electric"}}},
 		{"negation applies to one word", "electric not flying", Query{Types: []string{"electric"}, NotTypes: []string{"flying"}}},
 		{"negated stat word flips the sort", "electric but not fast", Query{Types: []string{"electric"}, Sort: store.StatSpeed, Ascending: true}},

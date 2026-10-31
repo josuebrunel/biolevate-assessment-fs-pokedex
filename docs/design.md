@@ -151,7 +151,7 @@ so every interpretation is explainable and testable.
 | `legendary fire` | legendary or mythical Pokémon of the fire type |
 | `raise defense`, `lower speed` | an effect to search for (the stat word is a term here, not a sort) |
 | `pikachu vs raichu`, `compare mr mime and pikachu` | comparison of the two sides |
-| `not electric`, `non-fire`, `electric not flying` | those types are excluded (the next word only) |
+| `not electric`, `non-fire`, `electric not flying`, `!fire`, `electric -flying` | those types are excluded (the next word only); `!` and `-` count when glued to the front of a word |
 | `electric but not fast` | `not` flips a stat word: slowest first |
 | `red pokemon`, `blue` | species colour filter (the dataset's own colour field, indexed) |
 | `gen 1 starter` | `gen 1` is read and dropped (the whole dataset is generation 1); other numbers add a note |
@@ -357,7 +357,7 @@ JavaScript; HTMX only removes the full reload.
 
 ## Golden-query suite
 
-`internal/golden` scores the engine against 93 queries with known good answers
+`internal/golden` scores the engine against 94 queries with known good answers
 (`cases.json`), through the real engine and Postgres. Cases cover the four
 challenges plus typos, hostile input, empty queries and odd input (negation, colours, filters that match nothing together), in six categories.
 
@@ -372,10 +372,10 @@ category                     cases  passed  recall  MRR
 criteria and comparison      16     16      1.00    0.74
 names and typos              16     16      1.00    0.83
 negatives and hostile input  5      5       -       -
-odd input                    22     22      1.00    0.81
+odd input                    23     23      1.00    0.82
 strategy bundles             8      8       1.00    0.55
 vocabulary-free discovery    26     26      1.00    0.52
-core total                   93     93      1.00    0.63
+core total                   94     94      1.00    0.64
 ```
 
 A case can carry a `known` flag with the reason the engine misses it. A known

@@ -17,7 +17,7 @@ What to type, what the engine returns, and how it is tested. The deep dives are 
 |---|---|
 | Names, fragments, typos | `chu`, `pikchu`, `charzard`, `mr mime`, `pi-ka-chu`, `pikachú` |
 | Type, stat, size | `bulky water`, `strongest fire`, `top 3 fastest`, `heaviest`, `tallest water`, `legendary fire` |
-| Negation and colour | `not electric`, `electric but not fast`, `non-fire`, `red pokemon`, `blue` |
+| Negation and colour | `not electric`, `electric but not fast`, `non-fire`, `!electric`, `electric -flying`, `red pokemon`, `blue` |
 | Effect or intent | `paralyze`, `heal myself`, `burn`, `raise defense`, `one hit knock out` |
 | Through a move or ability | `pokemon with levitate`, `which pokemon can learn thunder` |
 | Groups | `starter`, `water starter`, `fossil pokemon`, `eeveelution` |
@@ -64,5 +64,5 @@ Query 14 may legitimately find little, and that is fine to report.
 
 ## How queries are tested
 
-- **Golden suite** (`internal/golden/cases.json`, 93 cases): written by the engine's author while tuning, so it guards regressions. Run `make eval`.
+- **Golden suite** (`internal/golden/cases.json`, 94 cases): written by the engine's author while tuning, so it guards regressions. Run `make eval`.
 - **Held-out set** (above): not tuned against, reported separately once run.

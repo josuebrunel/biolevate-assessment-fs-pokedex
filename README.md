@@ -175,7 +175,7 @@ They are the four situations from the brief. Type them, or click the examples on
 | An effect, without the vocabulary | **`put opponent to sleep`** | The moves that cause sleep, then the Pokémon that learn them, **each with the sentence that links it**. |
 | A strategy across categories | **`rain team`** | **Tabs** for abilities, moves and Pokémon that work with rain, and why. |
 
-Also works: `chu`, `legendary fire`, `heaviest`, `pokemon with levitate`, `water starter`, `not electric`, `red pokemon`. More examples, how filters combine and the held-out set: **[docs/queries.md](docs/queries.md)**. Full scope: [design.md](docs/design.md#search-scope-what-it-can-and-cannot-do).
+Also works: `chu`, `legendary fire`, `heaviest`, `pokemon with levitate`, `water starter`, `not electric` (or `!electric`), `red pokemon`. More examples, how filters combine and the held-out set: **[docs/queries.md](docs/queries.md)**. Full scope: [design.md](docs/design.md#search-scope-what-it-can-and-cannot-do).
 
 ## How it works
 
@@ -218,7 +218,7 @@ Also works: `chu`, `legendary fire`, `heaviest`, `pokemon with levitate`, `water
 
 | Check | What it proves |
 |---|---|
-| **Golden suite** (93 queries) | Expected results within the expected rank; recall and MRR per category. **Written by the engine's author, so it guards regressions; it is not an independent benchmark.** |
+| **Golden suite** (94 queries) | Expected results within the expected rank; recall and MRR per category. **Written by the engine's author, so it guards regressions; it is not an independent benchmark.** |
 | **Index guard** | Every query's plan is checked; **one that would scan a table fails the test**. |
 | **Query-count test** | The same number of queries for 2 or 40 results (**no N+1**). |
 | **Real-Postgres and end-to-end tests** | Store, importer, migrations, web layer and the four situations, through HTTP and the templates. |
