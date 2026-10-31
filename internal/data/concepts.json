@@ -4,7 +4,7 @@
       "key": "sleep",
       "label": "Sleep",
       "aliases": ["sleep", "asleep", "sleeping", "sleepy", "drowsy", "drowsiness", "snooze", "slumber", "nap", "lull"],
-      "terms": ["sleep", "asleep", "puts the target to sleep"]
+      "terms": ["sleep", "puts the target to sleep"]
     },
     {
       "key": "paralysis",

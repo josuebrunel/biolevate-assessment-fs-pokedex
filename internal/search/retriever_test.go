@@ -181,32 +181,96 @@ func TestLexical(t *testing.T) {
 		}
 	})
 
-	t.Run("expander widens text search", func(t *testing.T) {
-		expanding := search.NewLexical(store.New(rec), search.WithExpander(func(terms []string) []string {
-			out := slices.Clone(terms)
-			for _, t := range terms {
-				if t == "paralysis" {
-					out = append(out, "paralyze")
-				}
-			}
-			return out
-		}))
-		q := search.Parse("moves that cause paralysis")
+	// The concept map closes the vocabulary gap lexical search leaves open.
+	concepts, err := search.LoadConceptMap(ctx, store.New(rec))
+	if err != nil {
+		t.Fatal(err)
+	}
+	withConcepts := search.NewLexical(store.New(rec), search.WithExpander(concepts.Expand))
+	retrieveWithConcepts := func(t *testing.T, input string, limit int) []search.Result {
+		t.Helper()
+		res, err := withConcepts.Retrieve(ctx, search.Parse(input), limit)
+		if err != nil {
+			t.Fatalf("Retrieve(%q): %v", input, err)
+		}
+		return res
+	}
 
-		plain, err := lexical.Retrieve(ctx, q, 20)
-		if err != nil {
-			t.Fatal(err)
+	t.Run("vocabulary gap exists without concepts", func(t *testing.T) {
+		// Documents why the concept map exists: the stemmer does not link
+		// paralysis to paralyze.
+		if res := retrieve(t, "moves that cause paralysis", 20); len(res) != 0 {
+			t.Errorf("without concepts: %v, want none", names(res))
 		}
-		if indexOf(plain, store.KindMove, "thunder-wave") >= 0 {
-			t.Skip("stemmer already links paralysis to paralyze; expander no longer needed")
-		}
-		widened, err := expanding.Retrieve(ctx, q, 20)
-		if err != nil {
-			t.Fatal(err)
-		}
+	})
+
+	t.Run("paralysis finds the moves that paralyze", func(t *testing.T) {
+		res := retrieveWithConcepts(t, "moves that cause paralysis", 20)
 		for _, m := range []string{"thunder-wave", "stun-spore", "glare"} {
-			if indexOf(widened, store.KindMove, m) < 0 {
-				t.Errorf("move %q missing from %v", m, names(widened))
+			if indexOf(res, store.KindMove, m) < 0 {
+				t.Errorf("move %q missing from %v", m, names(res))
+			}
+		}
+		for _, r := range res {
+			if r.Kind != store.KindMove {
+				t.Errorf("unexpected %s result %q", r.Kind, r.Name)
+			}
+		}
+		// "Paralyzes the target" is certain; "has a chance to paralyze" is not.
+		certain := []string{"thunder-wave", "stun-spore", "glare"}
+		for _, m := range certain {
+			if i := indexOf(res, store.KindMove, m); i >= 3 {
+				t.Errorf("certain paralyzer %q ranked %d, want in the top 3: %v", m, i, names(res))
+			}
+		}
+		if !slices.Contains(res[0].Reasons, "concept: Paralysis") {
+			t.Errorf("reasons = %v, want the concept named", res[0].Reasons)
+		}
+	})
+
+	t.Run("sleep causers outrank mere mentions", func(t *testing.T) {
+		res := retrieveWithConcepts(t, "put opponent to sleep", 50)
+		var moves []string
+		for _, r := range res {
+			if r.Kind == store.KindMove {
+				moves = append(moves, r.Name)
+			}
+		}
+		if len(moves) < 7 {
+			t.Fatalf("moves = %v", moves)
+		}
+		causers := slices.Clone(moves[:5])
+		slices.Sort(causers)
+		if want := []string{"hypnosis", "lovely-kiss", "sing", "sleep-powder", "spore"}; !slices.Equal(causers, want) {
+			t.Errorf("top 5 moves = %v, want the five that put the target to sleep %v (all moves: %v)", causers, want, moves)
+		}
+	})
+
+	t.Run("aliases reach the same moves", func(t *testing.T) {
+		for _, in := range []string{"asleep", "drowsy", "snooze", "put the foe to nap"} {
+			if indexOf(retrieveWithConcepts(t, in, 30), store.KindMove, "hypnosis") < 0 {
+				t.Errorf("%q does not find hypnosis", in)
+			}
+		}
+	})
+
+	t.Run("a type word is also expanded", func(t *testing.T) {
+		res := retrieveWithConcepts(t, "poison", 40)
+		var sawType, sawMove bool
+		for _, r := range res {
+			sawType = sawType || (r.Kind == store.KindPokemon && slices.Contains(r.Reasons, "type: poison"))
+			sawMove = sawMove || (r.Kind == store.KindMove && r.Name == "poison-sting")
+		}
+		if !sawType || !sawMove {
+			t.Errorf("poison should give poison-type Pokémon (%v) and poison moves (%v): %v", sawType, sawMove, names(res))
+		}
+	})
+
+	t.Run("rain reaches abilities and weather moves", func(t *testing.T) {
+		res := retrieveWithConcepts(t, "rain team", 30)
+		for _, a := range []string{"swift-swim", "rain-dish", "dry-skin", "hydration"} {
+			if indexOf(res, store.KindAbility, a) < 0 {
+				t.Errorf("ability %q missing from %v", a, names(res))
 			}
 		}
 	})

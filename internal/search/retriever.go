@@ -25,9 +25,9 @@ type Reader interface {
 	MoveList(ctx context.Context, p store.MoveListParams) ([]store.Move, error)
 }
 
-// TermExpander adds related words to the text-search terms, for example the
-// concept map turning "sleep" into the vocabulary of sleep-inducing moves.
-type TermExpander func(terms []string) []string
+// TermExpander adds related full-text terms for the parsed tokens, for example
+// the concept map turning "asleep" into the vocabulary of sleep-inducing moves.
+type TermExpander func(tokens []string) Expansion
 
 // Source weights: names and explicit criteria are precise signals, free-text
 // matches are broader.
@@ -175,13 +175,21 @@ func (l *Lexical) nameLists(ctx context.Context, q Query, kinds []store.Kind, fe
 // than dominated by whichever table scores highest.
 func (l *Lexical) textLists(ctx context.Context, q Query, kinds []store.Kind, fetch int) ([]ranked, error) {
 	terms := longEnough(q.Terms)
+	reason := "text mentions " + strings.Join(terms, ", ")
+	if l.expand != nil {
+		ex := l.expand(q.Tokens)
+		for _, t := range ex.Terms {
+			if !slices.Contains(terms, t) {
+				terms = append(terms, t)
+			}
+		}
+		if len(ex.Concepts) > 0 {
+			reason = "concept: " + strings.Join(ex.Concepts, ", ")
+		}
+	}
 	if len(terms) == 0 {
 		return nil, nil
 	}
-	if l.expand != nil {
-		terms = l.expand(terms)
-	}
-	reason := "text mentions " + strings.Join(terms, ", ")
 
 	var lists []ranked
 	for _, kind := range kinds {
