@@ -1,10 +1,14 @@
 package search_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"log/slog"
 	"slices"
 	"testing"
 
+	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/logging"
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/search"
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/testdb"
@@ -208,6 +212,39 @@ func TestLexical(t *testing.T) {
 			if indexOf(widened, store.KindMove, m) < 0 {
 				t.Errorf("move %q missing from %v", m, names(widened))
 			}
+		}
+	})
+
+	t.Run("debug log is correlated and quiet at info", func(t *testing.T) {
+		prev := slog.Default()
+		t.Cleanup(func() { slog.SetDefault(prev) })
+
+		var buf bytes.Buffer
+		debug, err := logging.New(&buf, "json", "debug")
+		if err != nil {
+			t.Fatal(err)
+		}
+		slog.SetDefault(debug)
+		ctx := logging.WithRequestID(ctx, "req-9")
+		if _, err := lexical.Retrieve(ctx, search.Parse("fast electric"), 5); err != nil {
+			t.Fatal(err)
+		}
+		var line map[string]any
+		if err := json.Unmarshal(buf.Bytes(), &line); err != nil {
+			t.Fatalf("log output %q: %v", buf.String(), err)
+		}
+		if line["msg"] != "search completed" || line["request_id"] != "req-9" || line["results"] != float64(5) {
+			t.Errorf("line = %v", line)
+		}
+
+		buf.Reset()
+		info, _ := logging.New(&buf, "json", "info")
+		slog.SetDefault(info)
+		if _, err := lexical.Retrieve(ctx, search.Parse("fast electric"), 5); err != nil {
+			t.Fatal(err)
+		}
+		if buf.Len() != 0 {
+			t.Errorf("retriever logged at info: %s", buf.String())
 		}
 	})
 

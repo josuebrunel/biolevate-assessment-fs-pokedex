@@ -16,6 +16,7 @@ import (
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/data"
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/db"
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/importer"
+	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/logging"
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/web"
 )
 
@@ -36,11 +37,12 @@ func run() error {
 		return err
 	}
 
-	var level slog.Level
-	if err := level.UnmarshalText([]byte(cfg.LogLevel)); err != nil {
-		return fmt.Errorf("parse log level %q: %w", cfg.LogLevel, err)
+	logger, err := logging.New(os.Stdout, cfg.LogFormat, cfg.LogLevel)
+	if err != nil {
+		return err
 	}
-	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})))
+	slog.SetDefault(logger)
+	slog.Info("config loaded", "config", cfg)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -49,16 +51,20 @@ func run() error {
 		return runCommands(ctx, cfg.DatabaseURL, db.MigrateAction(*migrate), *importData)
 	}
 
+	handler, err := web.NewServer(logger)
+	if err != nil {
+		return err
+	}
 	srv := &http.Server{
 		Addr:         cfg.HTTPAddr,
-		Handler:      web.NewServer(),
+		Handler:      handler,
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 	}
 
 	errc := make(chan error, 1)
 	go func() {
-		slog.Info("server starting", "addr", cfg.HTTPAddr)
+		slog.Info("server listening", "addr", cfg.HTTPAddr)
 		errc <- srv.ListenAndServe()
 	}()
 
@@ -71,12 +77,13 @@ func run() error {
 	case <-ctx.Done():
 	}
 
-	slog.Info("server shutting down")
+	slog.Info("server shutting down", "timeout", cfg.ShutdownTimeout)
 	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), cfg.ShutdownTimeout)
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		return fmt.Errorf("shutdown: %w", err)
 	}
+	slog.Info("server stopped")
 	return nil
 }
 

@@ -3,8 +3,10 @@ package search
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/josuebrunel/biolevate-assessment-fs-pokedex/internal/store"
 )
@@ -71,6 +73,7 @@ func NewLexical(r Reader, opts ...LexicalOption) *Lexical {
 
 // Retrieve returns up to limit results (or the query's "top N"), best first.
 func (l *Lexical) Retrieve(ctx context.Context, q Query, limit int) ([]Result, error) {
+	start := time.Now()
 	if q.Limit > 0 {
 		limit = q.Limit
 	}
@@ -107,6 +110,9 @@ func (l *Lexical) Retrieve(ctx context.Context, q Query, limit int) ([]Result, e
 	if len(results) > limit {
 		results = results[:limit]
 	}
+	slog.DebugContext(ctx, "search completed",
+		"query", q.Raw, "interpretation", q.Interpretation(),
+		"sources", len(lists), "results", len(results), "duration", time.Since(start))
 	return results, nil
 }
 
