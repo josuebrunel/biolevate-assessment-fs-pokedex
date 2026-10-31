@@ -34,7 +34,7 @@ func Run(ctx context.Context, conn *sql.DB, ds *data.Dataset) (err error) {
 		}
 	}()
 
-	for _, table := range []string{"pokemon_abilities", "pokemon_moves", "pokemon_types", "concept_types", "concept_terms", "concept_aliases", "concepts"} {
+	for _, table := range []string{"pokemon_abilities", "pokemon_moves", "pokemon_types", "concept_pokemon", "concept_types", "concept_terms", "concept_aliases", "concepts"} {
 		if _, err = bob.Exec(ctx, tx, psql.Delete(dm.From(table))); err != nil {
 			return fmt.Errorf("clear %s: %w", table, err)
 		}

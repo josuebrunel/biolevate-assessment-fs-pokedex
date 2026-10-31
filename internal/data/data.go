@@ -104,6 +104,9 @@ func Embedded() (*Dataset, error) {
 	if ds.Concepts, err = EmbeddedConcepts(); err != nil {
 		return nil, err
 	}
+	if err := checkConceptPokemon(ds); err != nil {
+		return nil, err
+	}
 	return ds, nil
 }
 
@@ -170,6 +173,23 @@ func (ds *Dataset) Validate() error {
 		for _, a := range p.Abilities {
 			if !abilities[a] {
 				return fmt.Errorf("pokemon %q: unknown ability %q", p.Name, a)
+			}
+		}
+	}
+	return nil
+}
+
+// checkConceptPokemon fails when a concept names a Pokémon that is not in the
+// dataset, so a collection cannot silently point at nothing.
+func checkConceptPokemon(ds *Dataset) error {
+	known := make(map[string]bool, len(ds.Pokemon))
+	for _, p := range ds.Pokemon {
+		known[p.Name] = true
+	}
+	for _, c := range ds.Concepts {
+		for _, name := range c.Pokemon {
+			if !known[name] {
+				return fmt.Errorf("concept %q names unknown pokemon %q", c.Key, name)
 			}
 		}
 	}

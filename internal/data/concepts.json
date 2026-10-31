@@ -87,6 +87,30 @@
       "aliases": ["hail", "hailstorm", "snow", "snowy"],
       "terms": ["hail"],
       "types": ["ice"]
+    },
+    {
+      "key": "ohko",
+      "label": "One-hit KO",
+      "aliases": ["ohko", "ko", "knockout", "instakill", "one hit ko", "one hit kill", "one hit knock out", "one hit knockout", "instant kill", "instant ko"],
+      "terms": ["one-hit ko"]
+    },
+    {
+      "key": "starter",
+      "label": "Starter",
+      "aliases": ["starter", "starters"],
+      "pokemon": ["bulbasaur", "charmander", "squirtle"]
+    },
+    {
+      "key": "fossil",
+      "label": "Fossil",
+      "aliases": ["fossil", "fossils", "prehistoric", "ancient"],
+      "pokemon": ["omanyte", "omastar", "kabuto", "kabutops", "aerodactyl"]
+    },
+    {
+      "key": "eeveelution",
+      "label": "Eevee evolution",
+      "aliases": ["eeveelution", "eeveelutions", "eevee"],
+      "pokemon": ["eevee", "vaporeon", "jolteon", "flareon"]
     }
   ]
 }

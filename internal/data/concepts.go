@@ -22,6 +22,8 @@ type Concept struct {
 	Terms   []string `json:"terms"`
 	// Types are the Pokémon types the condition favours (rain: water); optional.
 	Types []string `json:"types,omitempty"`
+	// Pokemon names the collection a word stands for ("starter"); optional.
+	Pokemon []string `json:"pokemon,omitempty"`
 }
 
 var conceptKey = regexp.MustCompile(`^[a-z]+(-[a-z]+)*$`)
@@ -60,11 +62,20 @@ func validateConcepts(concepts []Concept) error {
 		if strings.TrimSpace(c.Label) == "" {
 			return fmt.Errorf("concept %q: empty label", c.Key)
 		}
-		if err := validateWords(c.Key, "alias", "aliases", c.Aliases, true); err != nil {
+		if err := validateWords(c.Key, "alias", "aliases", c.Aliases, false); err != nil {
 			return err
 		}
-		if err := validateWords(c.Key, "term", "terms", c.Terms, false); err != nil {
-			return err
+		// A concept stands for words in the data (terms), a collection of
+		// Pokémon, or both; it must say what it means.
+		if len(c.Terms) > 0 || len(c.Pokemon) == 0 {
+			if err := validateWords(c.Key, "term", "terms", c.Terms, false); err != nil {
+				return err
+			}
+		}
+		if len(c.Pokemon) > 0 {
+			if err := validateWords(c.Key, "pokemon", "pokemon", c.Pokemon, true); err != nil {
+				return err
+			}
 		}
 		if len(c.Types) > 0 {
 			if err := validateWords(c.Key, "type", "types", c.Types, true); err != nil {
@@ -76,7 +87,9 @@ func validateConcepts(concepts []Concept) error {
 }
 
 // validateWords checks one list: non-empty, trimmed, lowercase, unique, and
-// single words when singleWord is set (aliases are matched token by token).
+// free of inner whitespace runs, and single words when singleWord is set.
+// Aliases may be several words ("one hit ko"): they are matched against runs of
+// consecutive tokens.
 func validateWords(concept, what, plural string, words []string, singleWord bool) error {
 	if len(words) == 0 {
 		return fmt.Errorf("concept %q: no %s", concept, plural)
@@ -90,6 +103,8 @@ func validateWords(concept, what, plural string, words []string, singleWord bool
 			return fmt.Errorf("concept %q: %s %q must be lowercase", concept, what, w)
 		case singleWord && strings.ContainsAny(w, " \t"):
 			return fmt.Errorf("concept %q: %s %q must be a single word", concept, what, w)
+		case strings.Contains(w, "  ") || strings.ContainsAny(w, "\t"):
+			return fmt.Errorf("concept %q: %s %q has irregular whitespace", concept, what, w)
 		case seen[w]:
 			return fmt.Errorf("concept %q: duplicate %s %q", concept, what, w)
 		}

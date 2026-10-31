@@ -70,5 +70,11 @@ func conceptRows(ds *data.Dataset) []entityRows {
 			types.rows.add(c.Key, t)
 		}
 	}
-	return []entityRows{concepts, aliases, terms, types}
+	collection := entityRows{table: table{"concept_pokemon", []string{"concept", "pokemon"}}}
+	for _, c := range ds.Concepts {
+		for _, name := range c.Pokemon {
+			collection.rows.add(c.Key, name)
+		}
+	}
+	return []entityRows{concepts, aliases, terms, types, collection}
 }
