@@ -18,6 +18,7 @@
   - [Query optimization](#query-optimization)
   - [Query parser](#query-parser)
   - [Lexical retriever](#lexical-retriever)
+  - [Logging](#logging)
   - [Commands](#commands)
 
 # Assessment
@@ -139,6 +140,7 @@ AI-use disclosure land here as they are built.
 | [Query optimization guard](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/5) | done |
 | [Query parser](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/6) | done |
 | [Lexical retriever](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/7) | done |
+| [Logging](https://github.com/josuebrunel/biolevate-assessment-fs-pokedex/issues/8) | done |
 | Search (query parsing, retrieval, concepts, graph expansion) | planned |
 | Web UI and compare view | planned |
 | Golden-query suite, hardening, write-up | planned |
@@ -285,6 +287,34 @@ Known limits, addressed in the next steps:
   to be assembled from abilities (`swift-swim`, `rain-dish`, `dry-skin`,
   `hydration`), moves whose text mentions weather (`thunder`, `solar-beam`) and
   Water types.
+
+## Logging
+
+Logs are structured (`log/slog`), one JSON object per line by default.
+
+| Variable | Default | Values |
+|---|---|---|
+| `APP_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
+| `APP_LOG_FORMAT` | `json` | `json`, `text` (easier to read locally) |
+
+- **Correlation:** a request ID (taken from `X-Request-Id` or generated) is stored
+  in the request context, and the logger adds it as `request_id` to every record
+  logged with that context. Lines from the store, the retriever and the error
+  handler can therefore be filtered together, and the client receives the same ID
+  in the `X-Request-Id` header and in error bodies.
+- **One access line per request:** method, route, path, status, duration, bytes,
+  remote IP. The level follows the status: 5xx `error`, 4xx `warn`, otherwise
+  `info`; health checks log at `debug` to keep probes quiet.
+- **Errors are logged once**, in the central error handler, with the underlying
+  error. The client only sees the generic status text (4xx keep their own
+  message) plus the request ID, so internals never leak.
+- **Lifecycle:** config loaded, listening, shutting down, stopped, plus
+  migration and import progress.
+- **Debug:** the retriever logs how each query was interpreted, how many sources
+  and results it produced, and how long it took.
+- **No secrets:** the config is logged through `slog.LogValuer`, which reduces the
+  database URL to scheme, host and database name. A test asserts a password
+  never reaches the output.
 
 ## Commands
 
