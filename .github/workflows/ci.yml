@@ -36,3 +36,25 @@ jobs:
       - run: go test -race ./...
         env:
           APP_TEST_DATABASE_URL: postgres://pokedex:pokedex@localhost:5432/pokedex?sslmode=disable
+
+  # Builds the real image and starts the whole stack the way a reviewer would,
+  # then checks the app answers a search. Catches Dockerfile, compose and
+  # migration problems that unit tests cannot.
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start the stack
+        run: docker compose up -d --build --wait
+      - name: Readiness
+        run: curl -fsS http://localhost:8080/readyz
+      - name: A vocabulary-free search finds the sleep moves
+        run: curl -fsS "http://localhost:8080/?q=put+opponent+to+sleep" | grep -q "Hypnosis"
+      - name: Compare view
+        run: curl -fsS "http://localhost:8080/compare?p=raichu&p=jolteon" | grep -q "Jolteon"
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs
+      - name: Stop the stack
+        if: always()
+        run: docker compose down -v
