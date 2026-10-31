@@ -146,6 +146,36 @@ func TestStore(t *testing.T) {
 		}
 	})
 
+	t.Run("MoveList", func(t *testing.T) {
+		moves, err := s.MoveList(ctx, store.MoveListParams{Types: []string{"electric"}, Limit: 3})
+		if err != nil || len(moves) != 3 {
+			t.Fatalf("moves = %+v, err = %v", moves, err)
+		}
+		for _, m := range moves {
+			if m.Type != "electric" {
+				t.Errorf("%s has type %s", m.Name, m.Type)
+			}
+		}
+		if moves[0].Power == nil || moves[1].Power == nil || *moves[0].Power < *moves[1].Power {
+			t.Errorf("not strongest first: %+v", moves)
+		}
+		all, err := s.MoveList(ctx, store.MoveListParams{Types: []string{"electric"}, Limit: 50})
+		if err != nil {
+			t.Fatal(err)
+		}
+		seenStatus := false
+		for _, m := range all {
+			if m.Power == nil {
+				seenStatus = true
+			} else if seenStatus {
+				t.Errorf("%s has power but follows a status move", m.Name)
+			}
+		}
+		if _, err := s.MoveList(ctx, store.MoveListParams{}); err == nil {
+			t.Error("expected an error without types")
+		}
+	})
+
 	t.Run("GetMany", func(t *testing.T) {
 		got, err := s.PokemonGetMany(ctx, []int{25, 1, 999, 25})
 		if err != nil {
