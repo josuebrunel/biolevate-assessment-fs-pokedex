@@ -17,7 +17,8 @@ func TestMigrate(t *testing.T) {
 		var n int
 		const q = `SELECT count(*) FROM information_schema.tables
 			WHERE table_schema = 'public' AND table_name IN
-			('pokemon','moves','abilities','pokemon_types','pokemon_moves','pokemon_abilities')`
+			('pokemon','moves','abilities','pokemon_types','pokemon_moves','pokemon_abilities',
+			 'concepts','concept_aliases','concept_terms')`
 		if err := conn.QueryRowContext(ctx, q).Scan(&n); err != nil {
 			t.Fatal(err)
 		}
@@ -36,19 +37,21 @@ func TestMigrate(t *testing.T) {
 		return n
 	}
 
-	// Each step records the tables and the stat sort indexes (7) that must exist.
+	// Each step records the tables (6 entity + 3 concept) and the stat sort
+	// indexes (7) that must exist afterwards.
 	steps := []struct {
 		name    string
 		action  db.MigrateAction
 		tables  int
 		sortIdx int
 	}{
-		{"up creates the schema", db.MigrateUp, 6, 7},
-		{"up is idempotent", db.MigrateUp, 6, 7},
-		{"down rolls back the sort indexes only", db.MigrateDown, 6, 0},
-		{"up re-applies", db.MigrateUp, 6, 7},
+		{"up creates the schema", db.MigrateUp, 9, 7},
+		{"up is idempotent", db.MigrateUp, 9, 7},
+		{"down rolls back the concept tables", db.MigrateDown, 6, 7},
+		{"down again rolls back the sort indexes", db.MigrateDown, 6, 0},
+		{"up re-applies", db.MigrateUp, 9, 7},
 		{"revert rolls back everything", db.MigrateRevert, 0, 0},
-		{"up after revert", db.MigrateUp, 6, 7},
+		{"up after revert", db.MigrateUp, 9, 7},
 	}
 	for _, s := range steps {
 		if err := db.Migrate(ctx, conn, s.action); err != nil {

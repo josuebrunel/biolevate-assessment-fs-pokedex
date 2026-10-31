@@ -49,3 +49,20 @@ func abilityRows(ds *data.Dataset) entityRows {
 		return []any{a.ID, a.Name, a.Effect, a.ShortEffect, a.Generation, a.IsMainSeries}
 	})
 }
+
+// conceptRows returns the three concept tables in foreign-key order.
+func conceptRows(ds *data.Dataset) []entityRows {
+	concepts := rowsOf(table{"concepts", []string{"key", "label"}}, ds.Concepts,
+		func(c data.Concept) []any { return []any{c.Key, c.Label} })
+	aliases := entityRows{table: table{"concept_aliases", []string{"concept", "alias"}}}
+	terms := entityRows{table: table{"concept_terms", []string{"concept", "term"}}}
+	for _, c := range ds.Concepts {
+		for _, a := range c.Aliases {
+			aliases.rows.add(c.Key, a)
+		}
+		for _, t := range c.Terms {
+			terms.rows.add(c.Key, t)
+		}
+	}
+	return []entityRows{concepts, aliases, terms}
+}

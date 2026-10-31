@@ -34,7 +34,7 @@ func Run(ctx context.Context, conn *sql.DB, ds *data.Dataset) (err error) {
 		}
 	}()
 
-	for _, table := range []string{"pokemon_abilities", "pokemon_moves", "pokemon_types"} {
+	for _, table := range []string{"pokemon_abilities", "pokemon_moves", "pokemon_types", "concept_terms", "concept_aliases", "concepts"} {
 		if _, err = bob.Exec(ctx, tx, psql.Delete(dm.From(table))); err != nil {
 			return fmt.Errorf("clear %s: %w", table, err)
 		}
@@ -79,6 +79,12 @@ func Run(ctx context.Context, conn *sql.DB, ds *data.Dataset) (err error) {
 		}
 	}
 
+	for _, c := range conceptRows(ds) {
+		if err = insertBatched(ctx, tx, c.table, c.rows, false); err != nil {
+			return err
+		}
+	}
+
 	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit import: %w", err)
 	}
@@ -88,7 +94,7 @@ func Run(ctx context.Context, conn *sql.DB, ds *data.Dataset) (err error) {
 		slog.Warn("analyze after import failed", "err", aErr)
 	}
 	slog.Info("import complete",
-		"pokemon", len(ds.Pokemon), "moves", len(ds.Moves), "abilities", len(ds.Abilities),
+		"pokemon", len(ds.Pokemon), "moves", len(ds.Moves), "abilities", len(ds.Abilities), "concepts", len(ds.Concepts),
 		"pokemon_moves", len(moves), "pokemon_abilities", len(abilities))
 	return nil
 }

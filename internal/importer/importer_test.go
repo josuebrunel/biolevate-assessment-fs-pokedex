@@ -13,7 +13,7 @@ import (
 func counts(t *testing.T, conn *sql.DB) map[string]int {
 	t.Helper()
 	out := map[string]int{}
-	for _, table := range []string{"pokemon", "moves", "abilities", "pokemon_types", "pokemon_moves", "pokemon_abilities"} {
+	for _, table := range []string{"pokemon", "moves", "abilities", "pokemon_types", "pokemon_moves", "pokemon_abilities", "concepts", "concept_aliases", "concept_terms"} {
 		var n int
 		if err := conn.QueryRow("SELECT count(*) FROM " + table).Scan(&n); err != nil {
 			t.Fatal(err)
@@ -39,6 +39,9 @@ func TestRun(t *testing.T) {
 		if first[table] != want {
 			t.Errorf("%s = %d, want %d", table, first[table], want)
 		}
+	}
+	if first["concepts"] != len(ds.Concepts) || first["concept_aliases"] == 0 || first["concept_terms"] == 0 {
+		t.Errorf("concepts not imported: %v", first)
 	}
 	if first["pokemon_moves"] == 0 || first["pokemon_abilities"] == 0 || first["pokemon_types"] < 151 {
 		t.Errorf("relations not populated: %v", first)
